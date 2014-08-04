@@ -1,0 +1,4 @@
+*.cabal-sandbox
+*.DS_Store
+*.swp
+*.tmproj
