@@ -2,3 +2,5 @@
 *.DS_Store
 *.swp
 *.tmproj
+/Materials
+cabal.sandbox.config
