@@ -11,3 +11,17 @@ The goal of this project is to reimplement parts of this program in Haskell, in 
   [cmmc]: http://books.google.de/books?id=rnEJAQAAMAAJ
   [cmmc-code]: http://artsites.ucsc.edu/faculty/cope/cmmc.html
   [mac-clisp]: http://en.wikipedia.org/wiki/Macintosh_Common_Lisp
+
+
+Bookmarks
+---------
+
+[*The Music Suite*](http://hackage.haskell.org/package/music-suite) — Hans Hoglund's Haskell DSL for description, analysis, composition and manipulation of music.
+
+* [Reference documentation](http://music-suite.github.io/docs/ref/)
+* [API haddocks](http://music-suite.github.io/docs/api/)
+* [examples](https://github.com/music-suite/music-preludes/tree/master/examples)
+
+
+
+
