@@ -4,20 +4,9 @@
 ------------------------------------------------------------------------------}
 module ReadCope where
 
-type Time = Rational
+import Types
 
-data Note = Note
-    { pitch    :: Int
-    , start    :: Time
-    , duration :: Time
-    , channel  :: Int
-    } deriving (Eq,Read,Show)
-
-type Metadata = [(String,String)]
-type Score = [Note]
-
-
-readCope :: String -> (Metadata, Score)
+readCope :: String -> Score
 readCope file = (metadata, score)
     where
     xs       = lines file
