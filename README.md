@@ -20,6 +20,9 @@ Bookmarks
 
 * [Reference documentation](http://music-suite.github.io/docs/ref/)
 * [API haddocks](http://music-suite.github.io/docs/api/)
+    * [`data Score a`](http://music-suite.github.io/docs/api/music-score/Music-Time-Score.html#t:Score)
+    * Pitch literals (c,d,...)
+      [`class IsPitch a`](http://music-suite.github.io/docs/api/music-pitch-literal/Music-Pitch-Literal-Pitch.html)
 * [examples](https://github.com/music-suite/music-preludes/tree/master/examples)
 
 
