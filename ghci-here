@@ -1,0 +1,2 @@
+#!/bin/sh
+ghci -package-db ./.cabal-sandbox/*-packages.conf.d -isrc "$@"
