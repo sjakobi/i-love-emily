@@ -25,6 +25,8 @@ Bookmarks
       [`class IsPitch a`](http://music-suite.github.io/docs/api/music-pitch-literal/Music-Pitch-Literal-Pitch.html)
 * [examples](https://github.com/music-suite/music-preludes/tree/master/examples)
 
+[*HCodec*](http://hackage.haskell.org/package/HCodecs) — a library that provides functions to read, write and manipulate MIDI, WAVE and SoundFont2 multimedia files.
 
+* [`Codec.Midi` module](http://hackage.haskell.org/package/HCodecs-0.5/docs/Codec-Midi.html)
 
 
