@@ -1,5 +1,6 @@
 *.cabal-sandbox
 *.DS_Store
+*.mid
 *.swp
 *.tmproj
 /Materials
