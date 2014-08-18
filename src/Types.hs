@@ -4,13 +4,15 @@
 ------------------------------------------------------------------------------}
 module Types where
 
-type Time = Rational
+type Time    = Rational
+type Pitch   = Int
+type Channel = Int
 
 data Note = Note
-    { pitch    :: Int
+    { pitch    :: Pitch
     , start    :: Time
     , duration :: Time
-    , channel  :: Int
+    , channel  :: Channel
     } deriving (Eq,Read,Show)
 
 type Notes    = [Note]
