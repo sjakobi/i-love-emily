@@ -339,6 +339,12 @@
 #|  Calling (FIRST-PLACE-WHERE-ALL-TOGETHER ((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96) . . .
 FIRST-PLACE-WHERE-ALL-TOGETHER returned 1000|#
 ;;;;;
+; 
+; apfelmus:
+; It appears that this function looks at the first notes of a piece and
+; returns the time on which all channels end simultaneously.
+; This time has to be on the beat, i.e. it must be a multiple of 1000.
+;
 
 (defun FIRST-PLACE-WHERE-ALL-TOGETHER (events)
   "This looks ahead to get the first time they end together"
@@ -360,7 +366,7 @@ FIRST-PLACE-WHERE-ALL-TOGETHER returned 1000|#
 (defun ALL-TOGETHER (channel channels)
   "Returns the appropriate channel timing."
   (cond ((null channel) (second (my-last (my-last channels)))) ;;; here is our remaining problem!!!!!
-        ((find-alignment-in-all-channels (second (first channel)) channels))
+        ((find-alignment-in-all-channels (second (first channel)) channels) )
         (t (all-together (rest channel) channels))))
 
 ;;;;;
@@ -374,7 +380,8 @@ FIND-ALIGNMENT-IN-ALL-CHANNELS returned 1000|#
         ((null point) point)
         ((find-alignment point (first channels))
          (find-alignment-in-all-channels point (rest channels)))
-        (t ())))
+        (t ())
+        ))
 
 ;;;;;
 #|     Calling (FIND-ALIGNMENT 1000 ((2 1000) (2 2000) (2 2500) (2 3000) (2 3500) (2 4000) (2 4 . . .
@@ -475,6 +482,11 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
   "A simple synonym for push."
   (set place-name (cons stuff (eval place-name))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+:: Chorale database
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defVar BACH-CHORALES-IN-DATABASES 
 ;;;1
 '(b206b b306b b408b b507b b606b
@@ -556,6 +568,13 @@ b43800b
 ))
 
 (create-complete-database bach-chorales-in-databases)
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+:: Composition from a database
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;;;;;
 #|? (COMPOSE-BACH)
