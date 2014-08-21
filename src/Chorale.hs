@@ -1,5 +1,5 @@
 {-----------------------------------------------------------------------------
-	David Cope's Chorale program
+    David Cope's Chorale program
 ------------------------------------------------------------------------------}
 module Chorale where
 
@@ -38,24 +38,24 @@ Note 0
 
 bachChoralesInDatabases :: [(String, Notes)]
 bachChoralesInDatabases = []
-	-- [("b206b", b206b), ...]
+    -- [("b206b", b206b), ...]
 
 {-----------------------------------------------------------------------------
-	Beat Database
+    Beat Database
 ------------------------------------------------------------------------------}
 data BeatIt = BeatIt
-	{ events           :: Notes -- ?
-	, startNotes       :: [Pitch]
-	, destinationNotes :: [Pitch]
-	-- , startNote :: ??
-	-- , startSet :: ??
-	, voiceLeading :: ()
-	-- , preDestinationNotes :: ??
-	-- , texture :: ??
-	, speac :: ()
-	-- , beat :: ??
-	-- , lengthToCadence :: ??
-	}
+    { events           :: Notes -- ?
+    , startNotes       :: [Pitch]
+    , destinationNotes :: [Pitch]
+    -- , startNote :: ??
+    -- , startSet :: ??
+    , voiceLeading :: ()
+    -- , preDestinationNotes :: ??
+    -- , texture :: ??
+    , speac :: ()
+    -- , beat :: ??
+    -- , lengthToCadence :: ??
+    }
 
 createCompleteDatabase :: [(String,Notes)] -> [BeatIt]
 createCompleteDatabase = concat . map createBeatIts
@@ -64,18 +64,18 @@ createCompleteDatabase = concat . map createBeatIts
 --   and decorate them with data about adjacent beats
 createBeatIts :: (String,Notes) -> [BeatIt]
 createBeatIts (_,notes) =
-		zipWith mkBeatIt beats (drop 1 beats)
-	where
-	beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
+        zipWith mkBeatIt beats (drop 1 beats)
+    where
+    beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
 
-	mkBeatIt beat next =
-		BeatIt
-			{ startNotes       = getOnsetNotes beat
-			, destinationNotes = getOnsetNotes next
-			, events           = beat
-			, voiceLeading     = undefined
-			, speac			   = ()
-			}
+    mkBeatIt beat next =
+        BeatIt
+            { startNotes       = getOnsetNotes beat
+            , destinationNotes = getOnsetNotes next
+            , events           = beat
+            , voiceLeading     = undefined
+            , speac            = ()
+            }
 
 removeNils   = id
 
@@ -87,13 +87,13 @@ collectBeats notes = undefined
 	collectByTiming = undefined
 
 {-----------------------------------------------------------------------------
-	Note Utilities
+    Note Utilities
 ------------------------------------------------------------------------------}
 -- | Adjust starting times so that the first note starts at zero.
 setToZero :: Notes -> Notes
 setToZero xs = [ x { start = start x - diff } | x <- xs ] 
-	where
-	diff = start $ head xs
+    where
+    diff = start $ head xs
 
 -- | Sort notes by starting times
 sortByStart :: Notes -> Notes
@@ -116,11 +116,11 @@ type Timing = (Channel, Time)
 -- | "This looks ahead to get the first time they end together".
 firstPlaceWhereAllTogether :: Notes -> Time
 firstPlaceWhereAllTogether notes = allTogether orderedTimingsByChannel
-	where
-	endingTimes = plotTimings notes
-	orderedTimingsByChannel = 
-		[ collectTimingsByChannel endingTimes c
-		| c <- getChannelNumbersFromEvents notes]
+    where
+    endingTimes = plotTimings notes
+    orderedTimingsByChannel = 
+        [ collectTimingsByChannel endingTimes c
+        | c <- getChannelNumbersFromEvents notes]
 
 -- | "Returns the appropriate channel timing."
 allTogether :: [[Timing]] -> Time
