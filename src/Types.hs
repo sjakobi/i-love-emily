@@ -15,6 +15,9 @@ data Note = Note
     , channel  :: Channel
     } deriving (Eq,Read,Show)
 
+end :: Note -> Time
+end x = start x + duration x
+
 type Notes    = [Note]
 
 type Metadata = [(String,String)]

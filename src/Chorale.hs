@@ -155,7 +155,7 @@ thousandp n = 0 == (round n `mod` 1000)
 
 -- | Get the channels and ending times of the notes.
 plotTimings :: Notes -> [Timing]
-plotTimings xs = [(channel x, start x + duration x) | x <- xs]
+plotTimings xs = [(channel x, end x) | x <- xs]
 
 -- | Collect the ending times by the indicated channel
 collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
