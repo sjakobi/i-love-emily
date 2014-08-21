@@ -39,6 +39,6 @@ toMidi (_,notes) = Midi
 
 -- | Example export
 example = do
-    x <- fmap readCope $ readFile "data/chopin-33-3"
+    x <- fmap readCope $ readFile "data/chopin-33-3.lisp"
     print $ toMidi x
     exportFile "chopin-33-3.mid" $ toMidi x

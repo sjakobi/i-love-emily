@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 import System.IO
 import System.IO.Unsafe
 
-example = unsafePerformIO $ fmap (snd . readCope) $ readFile "data/chopin-33-3"
+example = unsafePerformIO $ fmap (snd . readCope) $ readFile "data/chopin-33-3.lisp"
 example2 = drop 10 $ take 20 $ example
 
 bachChoralesInDatabases :: [(String, Notes)]
