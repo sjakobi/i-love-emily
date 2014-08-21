@@ -81,10 +81,16 @@ removeNils   = id
 
 -- | Decompose a piece of music into individual beats.
 collectBeats :: Notes -> [Notes]
-collectBeats notes = undefined
-	where
-	beat = collectByTiming notes
-	collectByTiming = undefined
+collectBeats []    = []
+collectBeats notes = beat : collectBeats rest
+    where
+    beat = collectByTiming (firstPlaceWhereAllTogether notes) notes
+    rest = drop (length beat) notes
+
+-- | Return only those notes which end before the first argument
+collectByTiming :: Time -> Notes -> Notes
+collectByTiming time = filter ((<= time) . end)
+    -- TODO: use a more clever data structure to turn this into a takeWhile
 
 {-----------------------------------------------------------------------------
     Note Utilities
