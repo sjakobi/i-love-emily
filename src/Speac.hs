@@ -266,7 +266,7 @@ resetDuration t n = star $ n { duration = newDuration }
 resetNextDuration :: Time -> Note -> Note
 resetNextDuration newEntranceTime n =
     n { start = newEntranceTime
-      , duration = duration n - newEntranceTime + start n
+      , duration = end n - newEntranceTime
       }
 
 -- | Return the first simultaneous notes in the input.
