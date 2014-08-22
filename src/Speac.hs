@@ -1,11 +1,11 @@
 module Speac where
 
 import qualified Data.IntMap.Strict as M
-import           Data.List          (foldl', zipWith4, (\\))
+import           Data.List          (foldl', sortBy, zipWith4, (\\))
 import           Data.Maybe         (fromJust, fromMaybe, isNothing,
                                      listToMaybe)
+import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
-import           GHC.Exts           (sortWith)
 
 import           Types
 
@@ -17,6 +17,10 @@ data Marked a = Unstarred a
               | Starred a
               deriving (Show)
 
+{----------------------------------------------------------------------------
+    Utility functions not used in the original Lisp code
+-----------------------------------------------------------------------------}
+
 -- | Return the object contained in a 'Marked'.
 unmark :: Marked a -> a
 unmark (Unstarred x) = x
@@ -25,6 +29,26 @@ unmark (Starred x) = x
 -- | Returns the end of a note.
 end :: Note -> Time
 end n = start n + duration n
+
+-- | Determine the interval between two pitches.
+interval :: Pitch -> Pitch -> Interval
+interval a b = abs $ a - b
+
+-- | Helper function to convert from Cope's "event" type to 'Note'.
+readNote :: (Time, Pitch, Time, Int, Int) -> Note
+readNote (a, b, c, d, _) = Note { pitch = b
+                                , start = a
+                                , duration = c
+                                , channel = d
+                                }
+
+-- | Sort notes chronologically
+sortByStart :: Notes -> Notes
+sortByStart = sortBy (comparing start)
+
+{----------------------------------------------------------------------------
+    Constants and data used throughout the code
+-----------------------------------------------------------------------------}
 
 -- | Returns the tension of any (positive) interval.
 intervalTension :: Interval -> Tension
@@ -56,14 +80,6 @@ metricTensionTable = [ (4, [(1, 2), (2, 2), (3, 6), (4, 2)])
                      , (9, [(1, 2), (2, 2), (3, 2), (4, 8), (5, 4), (6, 3)
                            , (7, 14), (8, 8), (9, 4)])
                      ]
-
--- | Helper function to convert from Cope's "event" type to 'Note'.
-readNote :: (Time, Pitch, Time, Int, Int) -> Note
-readNote (a, b, c, d, _) = Note { pitch = b
-                                , start = a
-                                , duration = c
-                                , channel = d
-                                }
 
 -- | Figure 7.12 from book.
 bookExample :: Notes
@@ -173,7 +189,7 @@ rateTheIntervals = map intervalTension
 -- >>> map (pitch . unmark) $ head $ breakAtEachEntrance bookExample
 -- [73,69,64,45]
 breakAtEachEntrance :: Notes -> [[Marked Note]]
-breakAtEachEntrance = breakAtEachEntrance' . sortWith start . fixTheTriplets
+breakAtEachEntrance = breakAtEachEntrance' . sortByStart . fixTheTriplets
 
 -- | Worker function for 'breakAtEachEntrance'.
 breakAtEachEntrance' :: Notes -> [[Marked Note]]
@@ -182,11 +198,11 @@ breakAtEachEntrance' orderedEvents@(e:_) =
     simultaneousEvents' : breakAtEachEntrance' orderedEvents'
   where
     simultaneousEvents' = map (resetDuration newEntranceTime) simultaneousEvents
-    simultaneousEvents = sortWith channel $ collectSimultaneousEvents orderedEvents
+    simultaneousEvents = sortBy (comparing channel) $ collectSimultaneousEvents orderedEvents
     newEntranceTime = if exitsAndEntrances
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
-    orderedEvents' = sortWith start continuingEvents ++ remainingEvents
+    orderedEvents' = sortByStart continuingEvents ++ remainingEvents
     continuingEvents = filter ((> 0) . duration) $ map (resetNextDuration newEntranceTime) simultaneousEvents
     remainingEvents = orderedEvents \\ simultaneousEvents
 
@@ -297,6 +313,3 @@ findMotionWeightings ps = map intervalTension $ zipWith interval ps (drop 1 ps)
 getChordRoots :: Notes -> [Pitch]
 getChordRoots = undefined
 -}
-
-interval :: Pitch -> Pitch -> Interval
-interval a b = abs $ a - b
