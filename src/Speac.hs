@@ -1,7 +1,7 @@
 module Speac where
 
 import qualified Data.IntMap.Strict as M
-import           Data.List          (zipWith4, (\\))
+import           Data.List          (foldl', zipWith4, (\\))
 import           Data.Maybe         (fromJust, fromMaybe, isNothing,
                                      listToMaybe)
 import qualified Data.Vector        as V
@@ -220,10 +220,10 @@ fixTriplets (a:b:bs)
 -- >>> head $ head $ getAllChannels bookExample
 -- Note {pitch = 73, start = 0 % 1, duration = 1000 % 1, channel = 1}
 getAllChannels :: Notes -> [Notes]
-getAllChannels = map snd . M.toAscList . foldr buildChannel M.empty
+getAllChannels = map snd . M.toAscList . foldl' buildChannel M.empty
   where
-    buildChannel :: Note -> M.IntMap Notes -> M.IntMap Notes
-    buildChannel n = M.insertWith (++) (channel n) [n]
+    buildChannel :: M.IntMap Notes -> Note -> M.IntMap Notes
+    buildChannel m n = M.insertWith (flip (++)) (channel n) [n] m
 
 -- | Returns the new exit or entrance time.
 getNewExitAndEntranceTime :: Notes -> Time -> Time
