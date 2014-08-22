@@ -162,6 +162,14 @@ rateTheIntervals = map intervalTension
 -----------------------------------------------------------------------------}
 
 -- | Breaks events at each new entrance.
+--   The notes are broken into groups of notes that start at the same time.
+--   Notes that are held while new notes begin are broken broken into
+--   "subnotes" and appear in at least two groups. Notes that are continued
+--   in the subsequent group are 'Starred', all others are 'Unstarred'.
+--
+--   Triplets (dt. Triolen) are treated specially (aligned?) in the
+--   'fixTriplets' function.
+--
 -- >>> map (pitch . unmark) $ head $ breakAtEachEntrance bookExample
 -- [73,69,64,45]
 breakAtEachEntrance :: Notes -> [[Marked Note]]
