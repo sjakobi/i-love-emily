@@ -112,16 +112,14 @@ data Rule = Rule Interval Interval Interval String
 getRules :: [Pitch] -> [Pitch] -> String -> [Rule]
 getRules xs ys name =
     concat $ zipWith
-        (\(x:xs) (d:ds) -> getRule d x xs ds name)
+        (\(x:xs) (d:ds) -> getRule d x xs ds)
         (tails1 xs) (tails1 ds)
     where
     tails1 = init . tails
     ds     = zipWith (-) ys xs
-
--- | Gets the rule between the first two args.
-getRule :: Interval -> Pitch -> [Pitch] -> [Interval] -> String -> [Rule]
-getRule voice note xs ds name =
-    zipWith (\x d -> Rule (reduceInterval $ x-note) voice d name) xs ds
+    
+    getRule voice note =
+        zipWith $ \x d -> Rule (reduceInterval $ x-note) voice d name
 
 {-----------------------------------------------------------------------------
     Pitch utilities
