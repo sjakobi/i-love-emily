@@ -1,7 +1,9 @@
-module Speac where
+{-# LANGUAGE TupleSections #-}
+module SPEAC where
 
 import qualified Data.IntMap.Strict as M
-import           Data.List          (foldl', sort, sortBy, zipWith4, (\\))
+import           Data.List          (foldl', minimumBy, nub, sort, sortBy,
+                                     zipWith4, (\\))
 import           Data.Maybe         (fromJust, fromMaybe, listToMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
@@ -117,22 +119,27 @@ bookExample = map readNote input
             ]
 
 -- | Interval, root placement, strength with 1 being strongest.
-rootStrengthsAndRoots :: [(Interval, Int, Int)]
-rootStrengthsAndRoots = []
+rootStrengthAndRoot :: Interval -> (Interval, Int, Int)
+rootStrengthAndRoot i = head $ filter (\(a, _, _) -> a == i)
+    [ (7, 0, 1), (5, 5, 2), (4, 0, 3), (8, 8, 4), (3, 0, 5), (9, 9, 6)
+    , (2, 2, 7), (10, 0, 8), (1, 1, 9), (11, 0, 10), (0, 0, 11), (6, 6, 12)
+    ]
 
-{-
+{----------------------------------------------------------------------------
+    Main function for SPEAC
+-----------------------------------------------------------------------------}
+
 -- | This is the top-level for this SPEAC analysis program.
--- >>> runTheSpeacWeightings bookExample 4 8 4
+-- >>> map myRound $ runTheSPEACWeightings bookExample 4 8 4
 -- [0.56,0.41,0.78,0.51,1.33,0.51,1.26,0.51]
-runTheSpeacWeightings :: Notes -> Int -> Int -> Int -> [Tension]
-runTheSpeacWeightings events beginBeat totalBeats meter =
+runTheSPEACWeightings :: Notes -> Int -> Int -> Int -> [Tension]
+runTheSPEACWeightings events beginBeat totalBeats meter =
     mapAdd verticalTensions metricTensions durationTensions approachTensions
   where
     verticalTensions = createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance events
     metricTensions = mapMetricTensions beginBeat totalBeats meter
     durationTensions = computeDurationTensions events
     approachTensions = getRootMotionWeightings events
--}
 
 -- | Maps addition across the various parameters of the analysis.
 mapAdd :: [Tension] -> [Tension] -> [Tension] -> [Tension] -> [Tension]
@@ -142,6 +149,10 @@ mapAdd = zipWith4 (\a b c d -> a + b + c + d)
 mapMetricTensions :: Int -> Int -> Int -> [Tension]
 mapMetricTensions startBeat totalBeats meter = take totalBeats $
   map (metricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
+
+{----------------------------------------------------------------------------
+    Utilities to compute vertical tension
+-----------------------------------------------------------------------------}
 
 -- | Top-level function of the tension list creators.
 -- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
@@ -161,7 +172,7 @@ collectBeatLists entranceLists =
 groupBeats :: [[Marked Note]] -> [[Marked Note]]
 groupBeats [] = []
 groupBeats (ns:nss)
-  | any isStarred ns = ns : (groupBeats nss)
+  | any isStarred ns = ns : groupBeats nss
   | otherwise = [ns]
 
 -- | Collects the pitches from its arg.
@@ -176,6 +187,19 @@ translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
   where intervalsToBassNote (n:ns) = map (subtract n) ns
         intervalsToBassNote []     = error "Bad input"
 
+-- | Removes all octave doublings.
+-- >>> removeOctaves [60, 67, 64, 72]
+-- [60,67,64]
+removeOctaves :: [Pitch] -> [Pitch]
+removeOctaves = foldl' addUnlessOctave []
+
+-- | @'addUnlessOctave' ps p@ appends @p@ to @ps@ if @ps@ doesn't contain
+-- an octave of @p@.
+addUnlessOctave :: [Pitch] -> Pitch -> [Pitch]
+addUnlessOctave ps p
+  | any ((== 0) . (`rem` 12) . interval p) ps = ps
+  | otherwise = ps ++ [p]
+
 -- | Translates its argument into weightings based on the stored values.
 -- >>> rate [[7, 16]]
 -- [0.3]
@@ -186,7 +210,7 @@ rate = map (myRound . sum . map intervalTension)
 -- >>> myRound 1.01111
 -- 1.01
 myRound :: Double -> Double
-myRound f = (fromInteger $ round $ f * 100) / 100.0
+myRound f = fromInteger (round $ f * 100) / 100.0
 
 {----------------------------------------------------------------------------
     Break notes into non-overlapping groups of simultaneous events
@@ -313,21 +337,8 @@ collectSimultaneousEvents [] = []
 collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
 
 {----------------------------------------------------------------------------
-    Other stuff
+    Utilities to compute duration tension
 -----------------------------------------------------------------------------}
-
--- | Removes all octave doublings.
--- >>> removeOctaves [60, 67, 64, 72]
--- [60,67,64]
-removeOctaves :: [Pitch] -> [Pitch]
-removeOctaves = foldl' addUnlessOctave []
-
--- | @'addUnlessOctave' ps p@ appends @p@ to @ps@ if @ps@ doesn't contain
--- an octave of @p@.
-addUnlessOctave :: [Pitch] -> Pitch -> [Pitch]
-addUnlessOctave ps p
-  | any ((== 0) . (`rem` 12) . interval p) ps = ps
-  | otherwise = ps ++ [p]
 
 -- | Computes the tensions for events.
 -- >>> computeDurationTensions bookExample
@@ -353,19 +364,122 @@ getDurations' (t:u:us)  _    = d : getDurations' (u:us) d
   where d = u - t
 getDurations' _         prev = [prev]
 
+{----------------------------------------------------------------------------
+    Utilities to compute approach tension
+-----------------------------------------------------------------------------}
+
+-- | Returns the tensions due to root motions.
+--
+--   The function behaves as expected in the book and in speac.lisp, line 109:
+-- >>> getRootMotionWeightings bookExample
+-- [0.0,0.0,0.1,0.1,0.55,0.1,0.8,0.1]
+--
+--   In contrast, line 610 in speac.lisp demands the following behavior:
+-- >> getRootMotionWeightings bookExample
+-- [0.0,0.0,0.1.0.0,0.8,0.8,0.1]
+--
+--   Clearly, the function can satisfy only one of these expectations.
 getRootMotionWeightings :: Notes -> [Tension]
-getRootMotionWeightings = undefined
+getRootMotionWeightings =
+    -- The zero here is to account for the first chord not having an
+    -- approach.
+    (0 :) . findMotionWeightings . getChordRoots
 
 -- | Finds the motion between chord roots. For example:
--- >>> findMotionWeightings [45, 57, 64, 57, 62]
--- [0.0,0.1,0.1,0.55]
+-- >>> findMotionWeightings [45, 57, 64, 57, 62, 55, 57, 50]
+-- [0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 findMotionWeightings :: [Pitch] -> [Tension]
 findMotionWeightings ps = map intervalTension $ zipWith interval ps (drop 1 ps)
 
-{-
 -- | Returns the chord roots of arg.
--- >>> getChordRoots bookExample
+--
+--   This function does not satisfy the expected behavior as listed in
+--   speac.list on line 634:
+-- >> getChordRoots bookExample
 -- [45,57,64,57,69,55,57,50]
+--
+--   Yet it does contribute to the correct behavior of
+--   'runTheSpeacWeightings', so it's probably fine.
 getChordRoots :: Notes -> [Pitch]
-getChordRoots = undefined
--}
+getChordRoots events = zipWith getChordRoot roots onBeatPitchLists
+  where onBeatPitchLists = map (sort . nub . concat)
+                         $ collectPitchLists
+                         $ collectBeatLists
+                         $ breakAtEachEntrance events
+        roots = map (findStrongestRootInterval . derive) onBeatPitchLists
+
+getChordRoot :: Interval -> [Pitch] -> Pitch
+getChordRoot r = findUpperLower r . fromJust . findIntervalInChord r
+
+-- |
+-- >>> derive [55, 64, 84]
+-- [0,5,8,9]
+-- >>> derive [41, 74, 76]
+-- [0,2,9,11]
+derive :: [Pitch] -> [Interval]
+derive = sort . nub . deriveAllIntervals
+
+-- | Returns the root note.
+-- >>> findUpperLower 7 (45, 64)
+-- 45
+findUpperLower :: Interval -> (Pitch, Pitch) -> Pitch
+findUpperLower root (a, b)
+  | r == 0    = a
+  | otherwise = b
+  where (_, r, _) = rootStrengthAndRoot root
+
+-- | Returns the strongest root interval.
+-- >>> findStrongestRootInterval [0, 7, 4, 0, 0, 9, 5, 0, 8]
+-- 7
+findStrongestRootInterval :: [Interval] -> Interval
+findStrongestRootInterval =
+    minimumBy (comparing ((\(_, _, s) -> s) . rootStrengthAndRoot))
+
+-- | Derive all possible intervals from pitches.
+-- >>> deriveAllIntervals [45, 64, 69, 73]
+-- [0,7,0,4,0,5,9,0,4,0]
+--
+-- Note: This example result contains one more zero than the example in the
+-- original Lisp code but seems to be correct.
+deriveAllIntervals :: [Pitch] -> [Interval]
+deriveAllIntervals pitches@(_:p:ps) =
+    deriveIntervals pitches ++ deriveAllIntervals (p:ps)
+deriveAllIntervals _ = [0]
+
+-- |
+-- >>> deriveIntervals [45, 64, 69, 73]
+-- [0,7,0,4]
+deriveIntervals :: [Pitch] -> [Interval]
+deriveIntervals pitches@(p:_) = map ((`mod` 12) . subtract p) pitches
+deriveIntervals [] = []
+
+-- | Returns the interval in the chord.
+-- >>> findIntervalInChord 7 [54, 62, 64, 69]
+-- Just (69,62)
+findIntervalInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
+findIntervalInChord i chord =
+    findItInChord i $ deriveAllPitches chord
+
+-- | Finds the interval in chord
+-- >>> findItInChord 7 [54, 54, 54, 62, 54, 64, 54, 69, 62, 62, 62, 64, 62, 69, 64, 64, 64, 69]
+-- Just (69,62)
+findItInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
+findItInChord _ [] = Nothing
+findItInChord i ps = listToMaybe
+                   $ filter (\(a, b) -> (a - b) `mod` 12 == i)
+                   $ zip (tail ps) ps
+
+-- | Derives all of the pitches.
+-- >>> deriveAllPitches [54, 62, 64, 69]
+-- [54,54,54,62,54,64,54,69,62,62,62,64,62,69,64,64,64,69]
+deriveAllPitches :: [Pitch] -> [Pitch]
+deriveAllPitches pitches@(_:b:bs) =
+    concat (derivePitches pitches) ++ deriveAllPitches (b:bs)
+deriveAllPitches _ = []
+
+-- |
+-- >>> derivePitches [54, 62, 64, 69]
+-- [[54,54],[54,62],[54,64],[54,69]]
+derivePitches :: [Pitch] -> [[Pitch]]
+derivePitches []            = []
+derivePitches pitches@(p:_) = [[p, q] | q <- pitches]
