@@ -41,7 +41,7 @@ bachChoralesInDatabases = []
     -- [("b206b", b206b), ...]
 
 {-----------------------------------------------------------------------------
-    Beat Database
+    Database
 ------------------------------------------------------------------------------}
 data BeatIt = BeatIt
     { events           :: Notes -- ?
@@ -49,10 +49,10 @@ data BeatIt = BeatIt
     , destinationNotes :: [Pitch]
     -- , startNote :: ??
     -- , startSet :: ??
-    , voiceLeading :: ()
+    , voiceLeading     :: ([Rule], String, Time)
     -- , preDestinationNotes :: ??
     -- , texture :: ??
-    , speac :: ()
+    , speac            :: ()
     -- , beat :: ??
     -- , lengthToCadence :: ??
     }
@@ -67,15 +67,22 @@ createBeatIts (_,notes) =
         zipWith mkBeatIt beats (drop 1 beats)
     where
     beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
+    name  = "bach"
 
     mkBeatIt beat next =
-        BeatIt
-            { startNotes       = getOnsetNotes beat
-            , destinationNotes = getOnsetNotes next
-            , events           = beat
-            , voiceLeading     = undefined
-            , speac            = ()
-            }
+            BeatIt
+                { startNotes       = startNotes
+                , destinationNotes = destinationNotes
+                , events           = beat
+                , voiceLeading     =
+                    (getRules startNotes destinationNotes name
+                    , name, start $ head $ sortByStart beat)
+                    -- also add these rules to the composer rules database
+                , speac            = ()
+                }
+        where
+        startNotes       = getOnsetNotes beat
+        destinationNotes = getOnsetNotes next
 
 removeNils   = id
 
@@ -91,6 +98,60 @@ collectBeats notes = beat : collectBeats rest
 collectByTiming :: Time -> Notes -> Notes
 collectByTiming time = filter ((<= time) . end)
     -- TODO: use a more clever data structure to turn this into a takeWhile
+
+
+-- | Rule for voice leading.
+data Rule = Rule Interval Interval Interval String
+    deriving (Eq,Ord,Show,Read)
+
+-- | Get intervals between adjacent sets of the two arguments.
+--
+-- >>> getRules [57,60,69,76] [59,62,67,79] "B206B-1"
+-- [Rule 3 2 2 "B206B-1", Rule 12 2 (-2) "B206B-1", Rule 7 2 3 "B206B-1"
+-- , Rule 9 2 (-2) "B206B-1", Rule 4 2 3 "B206B-1", Rule 7 (-2) 3 "B206B-1"]
+getRules :: [Pitch] -> [Pitch] -> String -> [Rule]
+getRules xs ys = getRules1 xs' ys' []
+    where
+    (xs', ys') = makeListsEqual (xs,ys)
+
+makeListsEqual = unzip . uncurry zip
+
+getRules1 xs ys result name
+    | null (tail xs) || null (tail ys) = reverse result
+    | otherwise                        =
+        let result1 = reverse (getRule (head ys - head xs) (head xs) xs ys name)
+                      ++ result
+        in getRules1 (tail xs) (tail ys) result1 name
+    -- this can code can almost certainly be simplified.
+
+-- | Gets the rule between the first two args.
+--
+-- A comment in the original Lisp code mentions that @getRule@ should satisfy
+-- 
+-- >> getRule 2 57 [57,60,69,76] [59,62,67,79] "B206B-1"
+-- [Rule 7 (-2) 3 "B206B-1"]
+--
+-- but the Lisp code returns another result.
+getRule :: Interval -> Pitch -> [Pitch] -> [Pitch] -> String -> [Rule]
+getRule voice x xs ys name
+    | null (tail xs) || null ys = []
+    | otherwise                 =
+        (Rule (reduceInterval $ xs !! 1 - x) voice (ys !! 1 - xs !! 1) name)
+        : getRule voice x (tail xs) (tail ys) name
+    -- ys !! 1 might fail. But  getRule  is only called with lists of equal length.
+
+{-----------------------------------------------------------------------------
+    Pitch utilities
+------------------------------------------------------------------------------}
+-- | Reduce intervals that go beyond an octave.
+-- 
+-- Note that the information whether the interval is an upwards or downards
+-- motion is preserved. The result is an interval from -12 to 12.
+reduceInterval :: Interval -> Interval
+reduceInterval x
+    | abs x <= 12 = x
+    | x < 0       = reduceInterval (x+12)
+    | otherwise   = reduceInterval (x-12)
 
 {-----------------------------------------------------------------------------
     Note Utilities
