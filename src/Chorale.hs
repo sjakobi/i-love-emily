@@ -112,26 +112,18 @@ data Rule = Rule Interval Interval Interval String
 getRules :: [Pitch] -> [Pitch] -> String -> [Rule]
 getRules xs ys name =
     concat $ zipWith
-        (\xs ys -> getRule (head ys - head xs) (head xs) xs ys name)
+        (\xs ys -> getRule (head ys - head xs) (head xs) (tail xs) (tail ys) name)
         (tails1 xs) (tails1 ys)
     where
     tails1 = init . tails
 
 -- | Gets the rule between the first two args.
---
--- A comment in the original Lisp code mentions that @getRule@ should satisfy
--- 
--- >> getRule 2 57 [57,60,69,76] [59,62,67,79] "B206B-1"
--- [Rule 7 (-2) 3 "B206B-1"]
---
--- but the Lisp code returns another result.
 getRule :: Interval -> Pitch -> [Pitch] -> [Pitch] -> String -> [Rule]
 getRule voice x xs ys name
-    | null (tail xs) || null ys = []
-    | otherwise                 =
-        (Rule (reduceInterval $ xs !! 1 - x) voice (ys !! 1 - xs !! 1) name)
+    | null xs    = []
+    | otherwise  =
+        (Rule (reduceInterval $ xs !! 0 - x) voice (ys !! 0 - xs !! 0) name)
         : getRule voice x (tail xs) (tail ys) name
-    -- ys !! 1 might fail. But  getRule  is only called with lists of equal length.
 
 {-----------------------------------------------------------------------------
     Pitch utilities
