@@ -173,29 +173,6 @@
         (t (return-beat (rest channel-events)
                         start-time))))
 
-
-;;;;;
-#| Calling (CREATE-PITCH-CLASS-SET (64 67 71)) 
- CREATE-PITCH-CLASS-SET returned (4 7 11)|#
-;;;;;
-
-(defun CREATE-PITCH-CLASS-SET (pitches)
-  "Sorts and gets a full pc-set."
-  (my-sort #'< (remove-duplicates (create-pc-set pitches))))
-
-;;;;;
-#|  Calling (CREATE-PC-SET (64 67 71)) 
-  CREATE-PC-SET returned (4 7 11)|#
-;;;;;
-; λ - A pitch class is a pitch modulo octaves.
-; The pitch class 0 corresponds to a C in the MIDI specification.
-;
-(defun CREATE-PC-SET (pitches)
-  "Creates a full PC set."
-  (if (null pitches) ()
-      (cons (mod (first pitches) 12)
-            (create-pc-set (rest pitches)))))
-
 ;;;;;;;
 ;objects
 ;;;;;;;

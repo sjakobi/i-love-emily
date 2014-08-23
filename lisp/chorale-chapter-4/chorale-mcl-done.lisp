@@ -92,6 +92,17 @@
   (if (zerop (mod number 1000)) t))
 
 ;;;;;
+#| Calling (GET-RULES (57 60 69 76) (59 62 67 79) B206B-1) 
+ GET-RULES returned ((3 2 2 B206B-1) (12 2 -2 B206B-1) (7 2 3 B206B-1) (9 2 -2 B206B-1) (4 2 3 B206B-1) (7 -2 3 B206B-1))|#
+;;;;;
+
+(defun GET-RULES (start-notes destination-notes name)
+  "Gets the intervals between adjacent sets of the two args."
+  (setq *rules-storage* ())
+  (let ((test (make-lists-equal (list start-notes destination-notes))))
+    (get-rules1 (first test)(second test) name)))
+
+;;;;;
 #|  Calling (GET-RULES1 (57 60 69 76) (59 62 67 79) B206B-1) 
   GET-RULES1 returned ((3 2 2 B206B-1) (12 2 -2 B206B-1) (7 2 3 B206B-1) (9 2 -2 B206B-1) (4 2 3 B206B-1) (7 -2 3 B206B-1))|#
 ;;;;;
@@ -281,6 +292,27 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
       (cons (list (fourth (first events))(+ (very-first events)(third (first events))))
             (plot-timings (rest events)))))
 
+;;;;;
+#| Calling (CREATE-PITCH-CLASS-SET (64 67 71)) 
+ CREATE-PITCH-CLASS-SET returned (4 7 11)|#
+;;;;;
+
+(defun CREATE-PITCH-CLASS-SET (pitches)
+  "Sorts and gets a full pc-set."
+  (my-sort #'< (remove-duplicates (create-pc-set pitches))))
+
+;;;;;
+#|  Calling (CREATE-PC-SET (64 67 71)) 
+  CREATE-PC-SET returned (4 7 11)|#
+;;;;;
+; λ - A pitch class is a pitch modulo octaves.
+; The pitch class 0 corresponds to a C in the MIDI specification.
+;
+(defun CREATE-PC-SET (pitches)
+  "Creates a full PC set."
+  (if (null pitches) ()
+      (cons (mod (first pitches) 12)
+            (create-pc-set (rest pitches)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -10,6 +10,7 @@ import           Data.List         (sortBy, tails)
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
+import           Data.Set          (Set)
 
 import System.IO
 import System.IO.Unsafe
@@ -146,6 +147,12 @@ reduceInterval x
     | abs x <= 12 = x
     | x < 0       = reduceInterval (x+12)
     | otherwise   = reduceInterval (x-12)
+
+-- | Set of pitch classes in the given list of pitches.
+-- 
+-- A pitch class is the pitch modulo octaves. Middle C has pitch class 0.
+createPitchClassSet :: [Pitch] -> Set Pitch
+createPitchClassSet = Set.fromList . map (`mod` 12)
 
 {-----------------------------------------------------------------------------
     Note Utilities
