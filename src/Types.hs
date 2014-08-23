@@ -4,9 +4,10 @@
 ------------------------------------------------------------------------------}
 module Types where
 
-type Time    = Rational
-type Pitch   = Int
-type Channel = Int
+type Time     = Rational
+type Pitch    = Int
+type Interval = Pitch
+type Channel  = Int
 
 data Note = Note
     { pitch    :: Pitch
