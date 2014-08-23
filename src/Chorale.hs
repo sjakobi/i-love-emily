@@ -6,7 +6,7 @@ module Chorale where
 import Types
 import ReadCope
 
-import           Data.List         (sortBy)
+import           Data.List         (sortBy, tails)
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
@@ -110,19 +110,12 @@ data Rule = Rule Interval Interval Interval String
 -- [Rule 3 2 2 "B206B-1", Rule 12 2 (-2) "B206B-1", Rule 7 2 3 "B206B-1"
 -- , Rule 9 2 (-2) "B206B-1", Rule 4 2 3 "B206B-1", Rule 7 (-2) 3 "B206B-1"]
 getRules :: [Pitch] -> [Pitch] -> String -> [Rule]
-getRules xs ys = getRules1 xs' ys' []
+getRules xs ys name =
+    concat $ zipWith
+        (\xs ys -> getRule (head ys - head xs) (head xs) xs ys name)
+        (tails1 xs) (tails1 ys)
     where
-    (xs', ys') = makeListsEqual (xs,ys)
-
-makeListsEqual = unzip . uncurry zip
-
-getRules1 xs ys result name
-    | null (tail xs) || null (tail ys) = reverse result
-    | otherwise                        =
-        let result1 = reverse (getRule (head ys - head xs) (head xs) xs ys name)
-                      ++ result
-        in getRules1 (tail xs) (tail ys) result1 name
-    -- this can code can almost certainly be simplified.
+    tails1 = init . tails
 
 -- | Gets the rule between the first two args.
 --
