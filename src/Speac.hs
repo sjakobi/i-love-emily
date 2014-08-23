@@ -1,7 +1,7 @@
 module Speac where
 
 import qualified Data.IntMap.Strict as M
-import           Data.List          (foldl', sortBy, zipWith4, (\\))
+import           Data.List          (foldl', sort, sortBy, zipWith4, (\\))
 import           Data.Maybe         (fromJust, fromMaybe, listToMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
@@ -44,6 +44,11 @@ readNote (a, b, c, d, _) = Note { pitch = b
 -- | Sort notes chronologically
 sortByStart :: Notes -> Notes
 sortByStart = sortBy (comparing start)
+
+-- | Return `True` if a 'Marked' object is 'Starred'.
+isStarred :: Marked a -> Bool
+isStarred (Starred _) = True
+isStarred _           = False
 
 {----------------------------------------------------------------------------
     Constants and data used throughout the code
@@ -138,39 +143,44 @@ mapMetricTensions :: Int -> Int -> Int -> [Tension]
 mapMetricTensions startBeat totalBeats meter = take totalBeats $
   map (metricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
 
-{-
 -- | Top-level function of the tension list creators.
 -- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
--- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
-createListOfTensions :: () -> ()
-createListOfTensions = undefined
--}
-
--- | Compares its ratings to find the most consonant for each beat.
-compare :: () -> ()
-compare = undefined
+-- [0.30000000000000004,0.30000000000000004,0.5,0.30000000000000004,0.5,0.30000000000000004,0.30000000000000004,0.30000000000000004]
+createListOfTensions :: [[[Pitch]]] -> [Tension]
+createListOfTensions = map (minimum . rate . translateToIntervals)
 
 -- | Collects beat lists.
-collectBeatLists :: () -> ()
-collectBeatLists = undefined
+collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
+collectBeatLists [] = []
+collectBeatLists entranceLists =
+    firstGroup : collectBeatLists (drop (length firstGroup) entranceLists)
+  where
+    firstGroup = groupBeats entranceLists
 
 -- | Groups the beats together.
-groupBeats :: () -> ()
-groupBeats = undefined
+groupBeats :: [[Marked Note]] -> [[Marked Note]]
+groupBeats [] = []
+groupBeats (ns:nss)
+  | any isStarred ns = ns : (groupBeats nss)
+  | otherwise = [ns]
 
 -- | Collects the pitches from its arg.
-collectPitchLists :: [[Notes]] -> [[[Pitch]]]
-collectPitchLists = map (map (map pitch))
+collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
+collectPitchLists = map (map (map (pitch . unmark)))
 
 -- | Translates groups of pitches into intervals.
-translateGroupsToIntervals :: [[[Pitch]]] -> ()
-translateGroupsToIntervals = undefined
+-- >>> translateToIntervals [[73, 69, 64, 45]]
+-- [[19,28]]
+translateToIntervals :: [[Pitch]] -> [[Interval]]
+translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
+  where intervalsToBassNote (n:ns) = map (subtract n) ns
+        intervalsToBassNote []     = error "Bad input"
 
--- | Returns the rating for the intervals. For example:
--- >>> rateTheIntervals [7, 16]
--- [0.1,0.2]
-rateTheIntervals :: [Interval] -> [Tension]
-rateTheIntervals = map intervalTension
+-- | Translates its argument into weightings based on the stored values.
+-- >>> rate [[7, 16]]
+-- [0.30000000000000004]
+rate :: [[Interval]] -> [Tension]
+rate = map (sum . map intervalTension)
 
 {----------------------------------------------------------------------------
     Break notes into non-overlapping groups of simultaneous events
@@ -299,6 +309,19 @@ collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
 {----------------------------------------------------------------------------
     Other stuff
 -----------------------------------------------------------------------------}
+
+-- | Removes all octave doublings.
+-- >>> removeOctaves [60, 67, 64, 72]
+-- [60,67,64]
+removeOctaves :: [Pitch] -> [Pitch]
+removeOctaves = foldl' addUnlessOctave []
+
+-- | @'addUnlessOctave' ps p@ appends @p@ to @ps@ if @ps@ doesn't contain
+-- an octave of @p@.
+addUnlessOctave :: [Pitch] -> Pitch -> [Pitch]
+addUnlessOctave ps p
+  | any ((== 0) . (`rem` 12) . interval p) ps = ps
+  | otherwise = ps ++ [p]
 
 computeDurationTensions :: Notes -> [Tension]
 computeDurationTensions = undefined
