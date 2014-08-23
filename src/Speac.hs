@@ -72,14 +72,21 @@ intervalTension = (table V.!) . (`rem` 12)
 exitsAndEntrances :: Bool
 exitsAndEntrances = False
 
-metricTensionTable :: [(Int, [(Int, Int)])]
-metricTensionTable = [ (4, [(1, 2), (2, 2), (3, 6), (4, 2)])
-                     , (2, [(1, 2), (2, 2)])
-                     , (3, [(1, 2), (2, 2), (3, 2)])
-                     , (6, [(1, 2), (2, 2), (3, 2), (4, 8), (5, 4), (6, 3)])
-                     , (9, [(1, 2), (2, 2), (3, 2), (4, 8), (5, 4), (6, 3)
-                           , (7, 14), (8, 8), (9, 4)])
-                     ]
+-- | Looks up the relevant metric weight.
+-- >>> metricTension 9 7
+-- 5.0e-2
+metricTension :: Int -> Int -> Tension
+metricTension meter beatNumber =
+    0.1 * fromIntegral beatNumber / fromIntegral invTension
+  where
+    invTension = fromJust (lookup meter metricTensionTable) !! pred beatNumber
+    metricTensionTable :: [(Int, [Int])]
+    metricTensionTable = [ (4, [2, 2, 6, 2])
+                         , (2, [2, 2])
+                         , (3, [2, 2, 2])
+                         , (6, [2, 2, 2, 8, 4, 3])
+                         , (9, [2, 2, 2, 8, 4, 3, 14, 8, 4])
+                         ]
 
 -- | Figure 7.12 from book.
 bookExample :: Notes
@@ -130,14 +137,7 @@ mapAdd = zipWith4 (\a b c d -> a + b + c + d)
 -- | Maps the metric tensions in a given meter.
 mapMetricTensions :: Int -> Int -> Int -> [Tension]
 mapMetricTensions startBeat totalBeats meter = take totalBeats $
-  map (lookupAndFigureMetricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
-
--- | Looks up the relevant metric weight.
-lookupAndFigureMetricTension :: Int -> Int -> Tension
-lookupAndFigureMetricTension meter beatNumber =
-    0.1 * fromIntegral beatNumber / fromIntegral tension
-    where
-    tension = fromJust $ lookup beatNumber =<< lookup meter metricTensionTable
+  map (metricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
 
 {-
 -- | Top-level function of the tension list creators.
