@@ -2,8 +2,7 @@ module Speac where
 
 import qualified Data.IntMap.Strict as M
 import           Data.List          (foldl', sortBy, zipWith4, (\\))
-import           Data.Maybe         (fromJust, fromMaybe, isNothing,
-                                     listToMaybe)
+import           Data.Maybe         (fromJust, fromMaybe, listToMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
@@ -202,6 +201,9 @@ breakAtEachEntrance' orderedEvents@(e:_) =
     newEntranceTime = if exitsAndEntrances
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
+    -- Sorting shouldn't be necessary here. Any note in `continuingEvents`
+    -- must start before or at the same time as the first notes in
+    -- `remainingEvents`. I think...
     orderedEvents' = sortByStart continuingEvents ++ remainingEvents
     continuingEvents = filter ((> 0) . duration) $ map (resetNextDuration newEntranceTime) simultaneousEvents
     remainingEvents = orderedEvents \\ simultaneousEvents
@@ -241,34 +243,38 @@ getAllChannels = map snd . M.toAscList . foldl' buildChannel M.empty
     buildChannel :: M.IntMap Notes -> Note -> M.IntMap Notes
     buildChannel m n = M.insertWith (flip (++)) (channel n) [n] m
 
--- | Returns the new exit or entrance time.
+-- | Returns the time of the very next event, be it the end or the start of
+--   a note.
 getNewExitAndEntranceTime :: Notes -> Time -> Time
-getNewExitAndEntranceTime orderedEvents startTime
-  | isNothing newStartTime = endTime
-  | endTime == fromJust newStartTime = endTime
-  | endTime > fromJust newStartTime = fromJust newStartTime
-  | otherwise = endTime
+getNewExitAndEntranceTime orderedEvents startTime =
+    getNewExitAndEntranceTime' newStartTime endTime
   where
-    endTime :: Time
     endTime = getShortestDuration startTime orderedEvents + startTime
-    newStartTime :: Maybe Time
     newStartTime = getNextStartTime startTime orderedEvents
 
--- | Returns the shortest duration of all notes that start at 'startTime'.
+-- | Worker function for 'getNewExitAndEntranceTime'
+getNewExitAndEntranceTime' :: Maybe Time -> Time -> Time
+getNewExitAndEntranceTime' (Just newStartTime) endTime
+  | endTime > newStartTime = newStartTime
+getNewExitAndEntranceTime' _ endTime = endTime
+
+-- | Returns the shortest duration of all notes that start at `startTime`.
 getShortestDuration :: Time -> Notes -> Time
 getShortestDuration startTime =
     minimum . map duration . takeWhile ((== startTime) . start)
 
--- | Gets the next event's start time.
+-- | Gets the start time of the first event starting after `startTime`.
 -- >>> getNextStartTime 0 bookExample
 -- Just (1000 % 1)
 getNextStartTime :: Time -> Notes -> Maybe Time
 getNextStartTime startTime = listToMaybe . filter (/= startTime) . map start
 
 -- | Gets the new entrance time.
+--   If there are any notes starting after `startTime`, return the start of
+--   those. Else return `endTime`.
 getNewEntranceTime :: Notes -> Time -> Time -> Time
 getNewEntranceTime orderedEvents startTime endTime =
-  fromMaybe endTime (listToMaybe $ filter (/= startTime) $ map start orderedEvents)
+  fromMaybe endTime $ getNextStartTime startTime orderedEvents
 
 -- | Resets the duration to not exceed the new entrance time and marks
 --   the note with a star if it outlasts the new entrance time.
