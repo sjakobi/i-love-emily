@@ -145,7 +145,7 @@ mapMetricTensions startBeat totalBeats meter = take totalBeats $
 
 -- | Top-level function of the tension list creators.
 -- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
--- [0.30000000000000004,0.30000000000000004,0.5,0.30000000000000004,0.5,0.30000000000000004,0.30000000000000004,0.30000000000000004]
+-- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
 createListOfTensions :: [[[Pitch]]] -> [Tension]
 createListOfTensions = map (minimum . rate . translateToIntervals)
 
@@ -178,9 +178,15 @@ translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
 
 -- | Translates its argument into weightings based on the stored values.
 -- >>> rate [[7, 16]]
--- [0.30000000000000004]
+-- [0.3]
 rate :: [[Interval]] -> [Tension]
-rate = map (sum . map intervalTension)
+rate = map (myRound . sum . map intervalTension)
+
+-- Round to two decimals.
+-- >>> myRound 1.01111
+-- 1.01
+myRound :: Double -> Double
+myRound f = (fromInteger $ round $ f * 100) / 100.0
 
 {----------------------------------------------------------------------------
     Break notes into non-overlapping groups of simultaneous events
@@ -323,8 +329,29 @@ addUnlessOctave ps p
   | any ((== 0) . (`rem` 12) . interval p) ps = ps
   | otherwise = ps ++ [p]
 
+-- | Computes the tensions for events.
+-- >>> computeDurationTensions bookExample
+-- [6.0e-2,6.0e-2,8.0e-2,6.0e-2,8.0e-2,6.0e-2,6.0e-2,6.0e-2]
 computeDurationTensions :: Notes -> [Tension]
-computeDurationTensions = undefined
+computeDurationTensions events =
+    zipWith addTensions durations intervalTensions
+  where
+    addTensions d i = myRound $ 0.1 * fromRational d / 4000 + 0.1 * i
+    durations = durationMap $ collectBeatLists $ breakAtEachEntrance events
+    intervalTensions = createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance events
+
+-- | Maps the duration per beat.
+durationMap :: [[[Marked Note]]] -> [Time]
+durationMap = getDurations . map (start . unmark . head . head)
+
+-- | Returns the time intervals between `ontimes`.
+getDurations :: [Time] -> [Time]
+getDurations ontimes = getDurations' ontimes 0
+
+getDurations' :: [Time] -> Time -> [Time]
+getDurations' (t:u:us)  _    = d : getDurations' (u:us) d
+  where d = u - t
+getDurations' _         prev = [prev]
 
 getRootMotionWeightings :: Notes -> [Tension]
 getRootMotionWeightings = undefined
