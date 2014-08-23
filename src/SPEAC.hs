@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module SPEAC where
 
 import qualified Data.IntMap.Strict as M
@@ -17,40 +16,6 @@ type Tension = Double
 data Marked a = Unstarred a
               | Starred a
               deriving (Show)
-
-{----------------------------------------------------------------------------
-    Utility functions not used in the original Lisp code
------------------------------------------------------------------------------}
-
--- | Return the object contained in a 'Marked'.
-unmark :: Marked a -> a
-unmark (Unstarred x) = x
-unmark (Starred x) = x
-
--- | Returns the end of a note.
-end :: Note -> Time
-end n = start n + duration n
-
--- | Determine the interval between two pitches.
-interval :: Pitch -> Pitch -> Interval
-interval a b = abs $ a - b
-
--- | Helper function to convert from Cope's "event" type to 'Note'.
-readNote :: (Time, Pitch, Time, Int, Int) -> Note
-readNote (a, b, c, d, _) = Note { pitch = b
-                                , start = a
-                                , duration = c
-                                , channel = d
-                                }
-
--- | Sort notes chronologically
-sortByStart :: Notes -> Notes
-sortByStart = sortBy (comparing start)
-
--- | Return `True` if a 'Marked' object is 'Starred'.
-isStarred :: Marked a -> Bool
-isStarred (Starred _) = True
-isStarred _           = False
 
 {----------------------------------------------------------------------------
     Constants and data used throughout the code
@@ -136,7 +101,10 @@ runTheSPEACWeightings :: Notes -> Int -> Int -> Int -> [Tension]
 runTheSPEACWeightings events beginBeat totalBeats meter =
     mapAdd verticalTensions metricTensions durationTensions approachTensions
   where
-    verticalTensions = createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance events
+    verticalTensions = createListOfTensions
+                     $ collectPitchLists
+                     $ collectBeatLists
+                     $ breakAtEachEntrance events
     metricTensions = mapMetricTensions beginBeat totalBeats meter
     durationTensions = computeDurationTensions events
     approachTensions = getRootMotionWeightings events
@@ -236,8 +204,10 @@ breakAtEachEntrance' [] = []
 breakAtEachEntrance' orderedEvents@(e:_) =
     simultaneousEvents' : breakAtEachEntrance' orderedEvents'
   where
-    simultaneousEvents' = map (resetDuration newEntranceTime) simultaneousEvents
-    simultaneousEvents = sortBy (comparing channel) $ collectSimultaneousEvents orderedEvents
+    simultaneousEvents' =
+      map (resetDuration newEntranceTime) simultaneousEvents
+    simultaneousEvents =
+      sortBy (comparing channel) $ collectSimultaneousEvents orderedEvents
     newEntranceTime = if exitsAndEntrances
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
@@ -245,7 +215,8 @@ breakAtEachEntrance' orderedEvents@(e:_) =
     -- must start before or at the same time as the first notes in
     -- `remainingEvents`. I think...
     orderedEvents' = sortByStart continuingEvents ++ remainingEvents
-    continuingEvents = filter ((> 0) . duration) $ map (resetNextDuration newEntranceTime) simultaneousEvents
+    continuingEvents = filter ((> 0) . duration) $
+        map (resetNextDuration newEntranceTime) simultaneousEvents
     remainingEvents = orderedEvents \\ simultaneousEvents
 
 -- | Removes the nils due to triplets.
@@ -349,7 +320,10 @@ computeDurationTensions events =
   where
     addTensions d i = myRound $ 0.1 * fromRational d / 4000 + 0.1 * i
     durations = durationMap $ collectBeatLists $ breakAtEachEntrance events
-    intervalTensions = createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance events
+    intervalTensions = createListOfTensions
+                     $ collectPitchLists
+                     $ collectBeatLists
+                     $ breakAtEachEntrance events
 
 -- | Maps the duration per beat.
 durationMap :: [[[Marked Note]]] -> [Time]
@@ -389,7 +363,8 @@ getRootMotionWeightings =
 -- >>> findMotionWeightings [45, 57, 64, 57, 62, 55, 57, 50]
 -- [0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 findMotionWeightings :: [Pitch] -> [Tension]
-findMotionWeightings ps = map intervalTension $ zipWith interval ps (drop 1 ps)
+findMotionWeightings ps = map intervalTension
+                        $ zipWith interval ps (drop 1 ps)
 
 -- | Returns the chord roots of arg.
 --
@@ -483,3 +458,37 @@ deriveAllPitches _ = []
 derivePitches :: [Pitch] -> [[Pitch]]
 derivePitches []            = []
 derivePitches pitches@(p:_) = [[p, q] | q <- pitches]
+
+{----------------------------------------------------------------------------
+    Utility functions not used in the original Lisp code
+-----------------------------------------------------------------------------}
+
+-- | Return the object contained in a 'Marked'.
+unmark :: Marked a -> a
+unmark (Unstarred x) = x
+unmark (Starred x) = x
+
+-- | Returns the end of a note.
+end :: Note -> Time
+end n = start n + duration n
+
+-- | Determine the interval between two pitches.
+interval :: Pitch -> Pitch -> Interval
+interval a b = abs $ a - b
+
+-- | Helper function to convert from Cope's "event" type to 'Note'.
+readNote :: (Time, Pitch, Time, Int, Int) -> Note
+readNote (a, b, c, d, _) = Note { pitch = b
+                                , start = a
+                                , duration = c
+                                , channel = d
+                                }
+
+-- | Sort notes chronologically
+sortByStart :: Notes -> Notes
+sortByStart = sortBy (comparing start)
+
+-- | Return `True` if a 'Marked' object is 'Starred'.
+isStarred :: Marked a -> Bool
+isStarred (Starred _) = True
+isStarred _           = False
