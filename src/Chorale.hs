@@ -49,7 +49,7 @@ data BeatIt = BeatIt
     , destinationNotes :: [Pitch]
     -- , startNote :: ??
     -- , startSet :: ??
-    , voiceLeading     :: ([Rule], String, Time)
+    , voiceLeading     :: ([VoiceLeading], String, Time)
     -- , preDestinationNotes :: ??
     -- , texture :: ??
     , speac            :: ()
@@ -75,7 +75,7 @@ createBeatIts (_,notes) =
                 , destinationNotes = destinationNotes
                 , events           = beat
                 , voiceLeading     =
-                    (getRules startNotes destinationNotes name
+                    (getRules name startNotes destinationNotes
                     , name, start $ head $ sortByStart beat)
                     -- also add these rules to the composer rules database
                 , speac            = ()
@@ -100,26 +100,39 @@ collectByTiming time = filter ((<= time) . end)
     -- TODO: use a more clever data structure to turn this into a takeWhile
 
 
--- | Rule for voice leading.
-data Rule = Rule Interval Interval Interval String
-    deriving (Eq,Ord,Show,Read)
+-- | A rule for voice leading
+data VoiceLeading = VL
+    { dyad     :: Interval -- ^ Begins with a two-note chord
+    , moveLow  :: Interval -- ^ The low note moves this way
+    , moveHigh :: Interval -- ^ And the high note moves that way
+    , nameVL   :: String   -- ^ Work name from which this was taken
+                           -- (This field is to be removed later.)
+    } deriving (Eq,Ord,Show,Read)
 
--- | Get intervals between adjacent sets of the two arguments.
+
+-- | Extract voice leading rules from two given chords.
 --
 -- >>> getRules [57,60,69,76] [59,62,67,79] "B206B-1"
--- [Rule 3 2 2 "B206B-1", Rule 12 2 (-2) "B206B-1", Rule 7 2 3 "B206B-1"
--- , Rule 9 2 (-2) "B206B-1", Rule 4 2 3 "B206B-1", Rule 7 (-2) 3 "B206B-1"]
-getRules :: [Pitch] -> [Pitch] -> String -> [Rule]
-getRules xs ys name =
-    concat $ zipWith
-        (\(x:xs) (d:ds) -> getRule d x xs ds)
-        (tails1 xs) (tails1 ds)
+-- [VL {dyad = 3, moveLow = 2, moveHigh = 2, nameVL = "B206B-1"},VL {dyad = 12, moveLow = 2, moveHigh = -2, nameVL = "B206B-1"},VL {dyad = 7, moveLow = 2, moveHigh = 3, nameVL = "B206B-1"},VL {dyad = 9, moveLow = 2, moveHigh = -2, nameVL = "B206B-1"},VL {dyad = 4, moveLow = 2, moveHigh = 3, nameVL = "B206B-1"},VL {dyad = 7, moveLow = -2, moveHigh = 3, nameVL = "B206B-1"}]
+getRules :: String -> [Pitch] -> [Pitch] -> [VoiceLeading]
+getRules name xs ys = map mkVoiceLeading $ pairings $ zip xs ys
     where
-    tails1 = init . tails
-    ds     = zipWith (-) ys xs
-    
-    getRule voice note =
-        zipWith $ \x d -> Rule (reduceInterval $ x-note) voice d name
+    mkVoiceLeading ((a,c),(b,d)) = VL
+        { dyad     = reduceInterval (b - a)
+        , moveLow  = c - a
+        , moveHigh = d - b 
+        , nameVL   = name
+        }
+
+-- | Return all ways to choose two elements of the list.
+-- In the result pairs, the first component always comes earlier in the list
+-- than the second.
+--
+-- >>> pairings [1..4]
+-- [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
+pairings :: [a] -> [(a,a)]
+pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
+
 
 {-----------------------------------------------------------------------------
     Pitch utilities
