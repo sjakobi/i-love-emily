@@ -119,10 +119,8 @@ getRules xs ys name =
 
 -- | Gets the rule between the first two args.
 getRule :: Interval -> Pitch -> [Pitch] -> [Pitch] -> String -> [Rule]
-getRule voice note []     _      name = []
-getRule voice note (x:xs) (y:ys) name =
-    Rule (reduceInterval $ x - note) voice (y-x) name
-    : getRule voice note xs ys name
+getRule voice note xs ys name =
+    zipWith (\x y -> Rule (reduceInterval $ x-note) voice (y-x) name) xs ys
 
 {-----------------------------------------------------------------------------
     Pitch utilities
