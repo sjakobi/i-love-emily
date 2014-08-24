@@ -410,31 +410,8 @@ findStrongestRootInterval = minimumBy (comparing (snd . rootStrengthAndRoot))
 -- >>> findIntervalInChord 7 [54, 62, 64, 69]
 -- Just (69,62)
 findIntervalInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
-findIntervalInChord i chord =
-    findItInChord i $ deriveAllPitches chord
-
--- | Finds the interval in chord
--- >>> findItInChord 7 [54, 54, 54, 62, 54, 64, 54, 69, 62, 62, 62, 64, 62, 69, 64, 64, 64, 69]
--- Just (69,62)
-findItInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
-findItInChord _ [] = Nothing
-findItInChord i ps = find (\(a, b) -> (a - b) `mod` 12 == i)
-                   $ zip (tail ps) ps
-
--- | Derives all of the pitches.
--- >>> deriveAllPitches [54, 62, 64, 69]
--- [54,54,54,62,54,64,54,69,62,62,62,64,62,69,64,64,64,69]
-deriveAllPitches :: [Pitch] -> [Pitch]
-deriveAllPitches pitches@(_:b:bs) =
-    concat (derivePitches pitches) ++ deriveAllPitches (b:bs)
-deriveAllPitches _ = []
-
--- |
--- >>> derivePitches [54, 62, 64, 69]
--- [[54,54],[54,62],[54,64],[54,69]]
-derivePitches :: [Pitch] -> [[Pitch]]
-derivePitches []            = []
-derivePitches pitches@(p:_) = [[p, q] | q <- pitches]
+findIntervalInChord i =
+    fmap swap . find (\(a, b) -> interval a b `rem` 12 == i) . pairings
 
 {----------------------------------------------------------------------------
     Utility functions not used in the original Lisp code
@@ -478,3 +455,6 @@ isStarred _           = False
 -- [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
 pairings :: [a] -> [(a,a)]
 pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
+
+swap :: (a, b) -> (b, a)
+swap (a, b) = (b, a)
