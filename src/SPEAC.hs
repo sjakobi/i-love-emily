@@ -141,7 +141,7 @@ groupBeats :: [[Marked Note]] -> [[Marked Note]]
 groupBeats [] = []
 groupBeats (ns:nss)
   | any isStarred ns = ns : groupBeats nss
-  | otherwise = [ns]
+  | otherwise        = [ns]
 
 -- | Collects the pitches from its arg.
 collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
@@ -166,7 +166,7 @@ removeOctaves = foldl' addUnlessOctave []
 addUnlessOctave :: [Pitch] -> Pitch -> [Pitch]
 addUnlessOctave ps p
   | any ((== 0) . (`rem` 12) . interval p) ps = ps
-  | otherwise = ps ++ [p]
+  | otherwise                                 = ps ++ [p]
 
 -- | Translates its argument into weightings based on the stored values.
 -- >>> rate [[7, 16]]
@@ -360,7 +360,7 @@ getRootMotionWeightings =
 -- [0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 findMotionWeightings :: [Pitch] -> [Tension]
 findMotionWeightings ps = map intervalTension
-                        $ zipWith interval ps (drop 1 ps)
+                        $ zipWith interval ps (tail ps)
 
 -- | Returns the chord roots of arg.
 --
@@ -395,9 +395,8 @@ derive = sort . nub . deriveAllIntervals
 -- 45
 findUpperLower :: Interval -> (Pitch, Pitch) -> Pitch
 findUpperLower root (a, b)
-  | r == 0    = a
-  | otherwise = b
-  where (_, r, _) = rootStrengthAndRoot root
+  | (_, 0, _) <- rootStrengthAndRoot root = a
+  | otherwise                             = b
 
 -- | Returns the strongest root interval.
 -- >>> findStrongestRootInterval [0, 7, 4, 0, 0, 9, 5, 0, 8]
