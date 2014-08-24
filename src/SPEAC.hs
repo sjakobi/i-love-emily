@@ -107,9 +107,9 @@ runTheSPEACWeightings events beginBeat totalBeats meter =
     metricTensions = mapMetricTensions beginBeat totalBeats meter
     -- In Cope's original code the addition of the vertical tensions (scaled
     -- by a factor of 0.1) and the duration tensions happens already in the
-    -- computeDurationTensions function.
+    -- compute-duration-tensions function.
     durationTensions = zipWith (\v d -> myRound $ 0.1 * v + d) verticalTensions
-                     $ computeDurationTensions events
+                     $ computeDurationTensions' events
     approachTensions = getRootMotionWeightings events
 
 -- | Maps addition across the various parameters of the analysis.
@@ -126,6 +126,9 @@ mapMetricTensions startBeat totalBeats meter = take totalBeats $
 -----------------------------------------------------------------------------}
 
 -- | Top-level function of the tension list creators.
+--
+-- Note: This function is named create-listS-of-tensions in the original
+-- sources. The current naming seems more appropriat though.
 --
 -- >>> createListOfTensions $ breakIntoPitchLists bookExample
 -- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
@@ -170,7 +173,7 @@ addUnlessOctave ps p
 rate :: [[Interval]] -> [Tension]
 rate = map (myRound . sum . map intervalTension)--
 
--- Round to two decimals.
+-- | Round to two decimals.
 -- >>> myRound 1.01111
 -- 1.01
 myRound :: Double -> Double
@@ -208,7 +211,7 @@ breakAtEachEntrance' orderedEvents@(e:_) = (simultaneousEvents', orderedEvents')
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
     continuingEvents =
-        mapMaybe (resetNextDuration newEntranceTime) simultaneousEvents
+        mapMaybe (resetNextDuration' newEntranceTime) simultaneousEvents
     (simultaneousEvents, remainingEvents) =
         span ((== start e) . start) orderedEvents
 
@@ -235,7 +238,7 @@ fixTriplets (a:b:bs)
     withinOne x y = abs (x - y) < 2
 
 -- | Collects all channels in proper order.
---   
+--
 --   Note: While Cope's 'get-all-channels' function returns a (possibly
 --   empty) list of notes each for channels 1-16, this function returns
 --   only those channels that are actually present in the input.
@@ -255,7 +258,7 @@ getNewExitAndEntranceTime orderedEvents startTime
   | (Just t) <- newStartTime, t < endTime = t
   | otherwise                             = endTime
   where
-    newStartTime = getNextStartTime startTime orderedEvents
+    newStartTime = getNextStartTime' startTime orderedEvents
     endTime = getShortestDuration startTime orderedEvents + startTime
 
 -- | Returns the shortest duration of all notes that start at `startTime`.
@@ -264,17 +267,17 @@ getShortestDuration startTime =
     minimum . map duration . takeWhile ((== startTime) . start)
 
 -- | Gets the start time of the first event starting after `startTime`.
--- >>> getNextStartTime 0 bookExample
+-- >>> getNextStartTime' 0 bookExample
 -- Just (1000 % 1)
-getNextStartTime :: Time -> Notes -> Maybe Time
-getNextStartTime startTime = find (/= startTime) . map start
+getNextStartTime' :: Time -> Notes -> Maybe Time
+getNextStartTime' startTime = find (/= startTime) . map start
 
 -- | Gets the new entrance time.
 --   If there are any notes starting after `startTime`, return the start of
 --   those. Else return `endTime`.
 getNewEntranceTime :: Notes -> Time -> Time -> Time
 getNewEntranceTime orderedEvents startTime endTime =
-  fromMaybe endTime $ getNextStartTime startTime orderedEvents
+  fromMaybe endTime $ getNextStartTime' startTime orderedEvents
 
 -- | Resets the duration to not exceed the new entrance time and marks
 --   the note with a star if it outlasts the new entrance time.
@@ -288,8 +291,8 @@ resetDuration t n = star $ n { duration = newDuration }
 -- If the event lasts while new events begin, its start and duration is
 -- reset and it is returned with `Just`. Otherwise, the function returns
 -- `Nothing`.
-resetNextDuration :: Time -> Note -> Maybe Note
-resetNextDuration newEntranceTime n
+resetNextDuration' :: Time -> Note -> Maybe Note
+resetNextDuration' newEntranceTime n
   | end n <= newEntranceTime = Nothing
   | otherwise                = Just $ n { start = newEntranceTime
                                         , duration = end n - newEntranceTime
@@ -304,17 +307,15 @@ collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
     Utilities to compute duration tension
 -----------------------------------------------------------------------------}
 
--- | Computes the tensions for events.
+-- | Computes duration tensions.
 --
 -- Note: In the original Lisp code, interval tensions are added to the
 -- duration tensions with a factor of 0.1. In this program, the addition
 -- happens in the top-level runTheSPEACWeightings function.
--- Because of this change, the example below doesn't behave as expected in the
--- book.
--- >> computeDurationTensions bookExample
--- [6.0e-2,6.0e-2,8.0e-2,6.0e-2,8.0e-2,6.0e-2,6.0e-2,6.0e-2]
-computeDurationTensions :: Notes -> [Tension]
-computeDurationTensions events = map (fromRational . (/ 40000))
+-- Because of this change, the the returned tensions are lower than those
+-- produced by the original Lisp function.
+computeDurationTensions' :: Notes -> [Tension]
+computeDurationTensions' events = map (fromRational . (/ 40000))
                                $ durationMap
                                $ collectBeatLists
                                $ breakAtEachEntrance events
@@ -374,7 +375,7 @@ getChordRoots events = zipWith getChordRoot roots onBeatPitchLists
     onBeatPitchLists = map (sort . nub . concat) $ breakIntoPitchLists events
 
 getChordRoot :: Interval -> [Pitch] -> Pitch
-getChordRoot r = findUpperLower r . fromJust . findIntervalInChord r
+getChordRoot r = findUpperLower r . fromJust . findIntervalInChord' r
 
 -- | Derives all possible intervals from pitches.
 -- >>> derive [55, 64, 84]
@@ -399,10 +400,10 @@ findStrongestRootInterval :: [Interval] -> Interval
 findStrongestRootInterval = minimumBy (comparing (snd . rootStrengthAndRoot))
 
 -- | Returns the interval in the chord.
--- >>> findIntervalInChord 7 [54, 62, 64, 69]
+-- >>> findIntervalInChord' 7 [54, 62, 64, 69]
 -- Just (69,62)
-findIntervalInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
-findIntervalInChord i =
+findIntervalInChord' :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
+findIntervalInChord' i =
     fmap swap . find (\(a, b) -> interval a b `rem` 12 == i) . pairings
 
 {----------------------------------------------------------------------------
