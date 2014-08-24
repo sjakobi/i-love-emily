@@ -3,7 +3,7 @@ module SPEAC where
 import qualified Data.Array         as A
 import qualified Data.IntMap.Strict as M
 import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
-                                     zipWith4, (\\))
+                                     tails, zipWith4, (\\))
 import           Data.Maybe         (fromJust, fromMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
@@ -384,13 +384,13 @@ getChordRoots events = zipWith getChordRoot roots onBeatPitchLists
 getChordRoot :: Interval -> [Pitch] -> Pitch
 getChordRoot r = findUpperLower r . fromJust . findIntervalInChord r
 
--- |
+-- | Derives all possible intervals from pitches.
 -- >>> derive [55, 64, 84]
 -- [0,5,8,9]
 -- >>> derive [41, 74, 76]
 -- [0,2,9,11]
 derive :: [Pitch] -> [Interval]
-derive = sort . nub . deriveAllIntervals
+derive = (0 :) . sort . nub . map (\(a, b) -> (b - a) `mod` 12) . pairings
 
 -- | Returns the root note.
 -- >>> findUpperLower 7 (45, 64)
@@ -405,24 +405,6 @@ findUpperLower root (a, b)
 -- 7
 findStrongestRootInterval :: [Interval] -> Interval
 findStrongestRootInterval = minimumBy (comparing (snd . rootStrengthAndRoot))
-
--- | Derive all possible intervals from pitches.
--- >>> deriveAllIntervals [45, 64, 69, 73]
--- [0,7,0,4,0,5,9,0,4,0]
---
--- Note: This example result contains one more zero than the example in the
--- original Lisp code but seems to be correct.
-deriveAllIntervals :: [Pitch] -> [Interval]
-deriveAllIntervals pitches@(_:p:ps) =
-    deriveIntervals pitches ++ deriveAllIntervals (p:ps)
-deriveAllIntervals _ = [0]
-
--- |
--- >>> deriveIntervals [45, 64, 69, 73]
--- [0,7,0,4]
-deriveIntervals :: [Pitch] -> [Interval]
-deriveIntervals pitches@(p:_) = map ((`mod` 12) . subtract p) pitches
-deriveIntervals [] = []
 
 -- | Returns the interval in the chord.
 -- >>> findIntervalInChord 7 [54, 62, 64, 69]
@@ -487,3 +469,12 @@ sortByStart = sortBy (comparing start)
 isStarred :: Marked a -> Bool
 isStarred (Starred _) = True
 isStarred _           = False
+
+-- | Return all ways to choose two elements of the list.
+-- In the result pairs, the first component always comes earlier in the list
+-- than the second.
+--
+-- >>> pairings [1..4 :: Int]
+-- [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
+pairings :: [a] -> [(a,a)]
+pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
