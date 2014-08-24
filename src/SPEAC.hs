@@ -51,14 +51,15 @@ metricTension :: Int -> Int -> Tension
 metricTension meter beatNumber =
     0.1 * fromIntegral beatNumber / fromIntegral invTension
   where
-    invTension = fromJust (lookup meter metricTensionTable) !! pred beatNumber
-    metricTensionTable :: [(Int, [Int])]
-    metricTensionTable = [ (4, [2, 2, 6, 2])
-                         , (2, [2, 2])
-                         , (3, [2, 2, 2])
-                         , (6, [2, 2, 2, 8, 4, 3])
-                         , (9, [2, 2, 2, 8, 4, 3, 14, 8, 4])
-                         ]
+    invTension = (metricTensionTable A.! meter) A.! beatNumber
+    metricTensionTable =
+      A.array (2, 9) $ map (\(a, bs) -> (a, A.listArray (1, length bs) bs))
+          [ (4, [2, 2, 6, 2])
+          , (2, [2, 2])
+          , (3, [2, 2, 2])
+          , (6, [2, 2, 2, 8, 4, 3])
+          , (9, [2, 2, 2, 8, 4, 3, 14, 8, 4 :: Int])
+          ]
 
 -- | Figure 7.12 from book.
 bookExample :: Notes
