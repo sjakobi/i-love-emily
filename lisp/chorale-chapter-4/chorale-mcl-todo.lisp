@@ -879,38 +879,6 @@ T|#
         collect (second event)))
 
 ;;;;;
-#| Calling (incf-beat b35300b-42) 
- incf-beat returned b35300b-3
-|#
-;;;;;
-
-(defun INCF-BEAT (beat)
-  "Increments the beat number."
-  (implode (list (get-db-name beat) '- (1+ (my-last (explode beat))))))
-
-;;;;;
-#|  Calling (get-db-name b35300b-42) 
-  get-db-name returned b35300b|#
-;;;;;
-
-(defun GET-DB-NAME (lexicon)
-  "Returns the database name."
-  (implode (get-db-n (explode lexicon))))
-
-;;;;;
-#|   Calling (get-db-n (b 3 5 3 0 0 b - 4 2)) 
-   get-db-n returned (b 3 5 3 0 0 b)|#
-;;;;;
-
-(defun GET-DB-N (exploded-lexicon)
-  "Checks for dashes in the db-name."
-  (cond ((equal (first exploded-lexicon) '-)
-         ())
-        ((null exploded-lexicon)())
-        (t (cons (first exploded-lexicon)
-                 (get-db-n (rest exploded-lexicon))))))
-
-;;;;;
 #| Calling (match-bach-tonic ((56000 62 1000 4 96) (56000 67 1000 3 96) (56000 74 500 2 96) (56000 81 2000 1 96) (56500 72 250 2 96) (56750 71 250 2 96) (57000 50 1000 4 96) (57000 66 1000 3 96) (57000 72 1000 2 96))) 
  match-bach-tonic returned nil|#
 ;;;;;

@@ -437,6 +437,45 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
       (cons (mod (first pitches) 12)
             (create-pc-set (rest pitches)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+:: Composition from a database
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;
+#| Calling (incf-beat b35300b-42) 
+ incf-beat returned b35300b-3
+|#
+;;;;;
+; λ - ?!
+;     Apparently, only the last digit is incremented. This is probably a bug.
+
+(defun INCF-BEAT (beat)
+  "Increments the beat number."
+  (implode (list (get-db-name beat) '- (1+ (my-last (explode beat))))))
+
+;;;;;
+#|  Calling (get-db-name b35300b-42) 
+  get-db-name returned b35300b|#
+;;;;;
+
+(defun GET-DB-NAME (lexicon)
+  "Returns the database name."
+  (implode (get-db-n (explode lexicon))))
+
+;;;;;
+#|   Calling (get-db-n (b 3 5 3 0 0 b - 4 2)) 
+   get-db-n returned (b 3 5 3 0 0 b)|#
+;;;;;
+
+(defun GET-DB-N (exploded-lexicon)
+  "Checks for dashes in the db-name."
+  (cond ((equal (first exploded-lexicon) '-)
+         ())
+        ((null exploded-lexicon)())
+        (t (cons (first exploded-lexicon)
+                 (get-db-n (rest exploded-lexicon))))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 :: Close splash window

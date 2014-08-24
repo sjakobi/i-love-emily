@@ -6,6 +6,7 @@ module Chorale where
 import Types
 import ReadCope
 
+import           Data.Char         (ord)
 import           Data.List         (sortBy, tails, intersperse)
 import           Data.Maybe
 import           Data.Ord          (comparing)
@@ -253,5 +254,20 @@ plotTimings xs = [(channel x, end x) | x <- xs]
 collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
 collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ] 
 
-
+{-----------------------------------------------------------------------------
+    Composition
+------------------------------------------------------------------------------}
+-- | Increment beat number.
+--
+-- WARNING: This function increments only the last digit in the string.
+-- I think this is a bug.
+--
+-- >>> incfBeat "b35300b-42"
+-- "b35300b-3"
+--
+-- TODO: Beat names should probably be modeled as pairs @(String, Int)@.
+incfBeat :: Name -> Name
+incfBeat name = getDBName name ++ "-" ++ (show $ ord (last name) - ord '0' + 1)
+    where
+    getDBName = takeWhile (/= '-')
 
