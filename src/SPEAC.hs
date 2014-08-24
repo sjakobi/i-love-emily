@@ -133,17 +133,8 @@ breakIntoPitchLists = collectPitchLists . collectBeatLists . breakAtEachEntrance
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
 collectBeatLists [] = []
-collectBeatLists entranceLists =
-    firstGroup : collectBeatLists (drop (length firstGroup) entranceLists)
-  where
-    firstGroup = groupBeats entranceLists
-
--- | Groups the beats together.
-groupBeats :: [[Marked Note]] -> [[Marked Note]]
-groupBeats [] = []
-groupBeats (ns:nss)
-  | any isStarred ns = ns : groupBeats nss
-  | otherwise        = [ns]
+collectBeatLists entranceLists = xs : collectBeatLists ys
+  where (xs, ys) = spanPlus (any isStarred) entranceLists
 
 -- | Collects the pitches from its arg.
 collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
@@ -456,3 +447,16 @@ pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
 
 swap :: (a, b) -> (b, a)
 swap (a, b) = (b, a)
+
+-- | @'spanPlus' p xs@ returns a tuple where the first element is the
+-- longest prefix of @xs@ that satisfies @p@ plus the first element of the
+-- rest if there is any. The remaining elements make up the second element
+-- of the tuple.
+-- >>> spanPlus (== 'a') "aabb"
+-- ("aab","b")
+-- >>> spanPlus (== 'a') "aa"
+-- ("aa","")
+spanPlus :: (a -> Bool) -> [a] -> ([a], [a])
+spanPlus p xs = case span p xs of
+                  (as, (b:bs)) -> (as ++ [b], bs)
+                  t -> t
