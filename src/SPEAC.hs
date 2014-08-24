@@ -1,9 +1,9 @@
 module SPEAC where
 
 import qualified Data.IntMap.Strict as M
-import           Data.List          (foldl', minimumBy, nub, sort, sortBy,
+import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
                                      zipWith4, (\\))
-import           Data.Maybe         (fromJust, fromMaybe, listToMaybe)
+import           Data.Maybe         (fromJust, fromMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
@@ -278,7 +278,7 @@ getShortestDuration startTime =
 -- >>> getNextStartTime 0 bookExample
 -- Just (1000 % 1)
 getNextStartTime :: Time -> Notes -> Maybe Time
-getNextStartTime startTime = listToMaybe . filter (/= startTime) . map start
+getNextStartTime startTime = find (/= startTime) . map start
 
 -- | Gets the new entrance time.
 --   If there are any notes starting after `startTime`, return the start of
@@ -436,8 +436,7 @@ findIntervalInChord i chord =
 -- Just (69,62)
 findItInChord :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
 findItInChord _ [] = Nothing
-findItInChord i ps = listToMaybe
-                   $ filter (\(a, b) -> (a - b) `mod` 12 == i)
+findItInChord i ps = find (\(a, b) -> (a - b) `mod` 12 == i)
                    $ zip (tail ps) ps
 
 -- | Derives all of the pitches.
