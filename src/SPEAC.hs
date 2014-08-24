@@ -330,13 +330,11 @@ durationMap :: [[[Marked Note]]] -> [Time]
 durationMap = getDurations . map (start . unmark . head . head)
 
 -- | Returns the time intervals between `ontimes`.
+-- >>> getDurations $ map (* 1000) [0..3]
+-- [1000 % 1,1000 % 1,1000 % 1,1000 % 1]
 getDurations :: [Time] -> [Time]
-getDurations ontimes = getDurations' ontimes 0
-
-getDurations' :: [Time] -> Time -> [Time]
-getDurations' (t:u:us)  _    = d : getDurations' (u:us) d
-  where d = u - t
-getDurations' _         prev = [prev]
+getDurations ontimes = ds ++ [last ds]
+  where ds = zipWith (-) (tail ontimes) ontimes
 
 {----------------------------------------------------------------------------
     Utilities to compute approach tension
