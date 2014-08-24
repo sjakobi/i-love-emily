@@ -3,7 +3,7 @@ module SPEAC where
 import qualified Data.Array         as A
 import qualified Data.IntMap.Strict as M
 import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
-                                     tails, zipWith4, (\\))
+                                     tails, zipWith4)
 import           Data.Maybe         (fromJust, fromMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
@@ -132,9 +132,7 @@ breakIntoPitchLists = collectPitchLists . collectBeatLists . breakAtEachEntrance
 
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
-collectBeatLists [] = []
-collectBeatLists entranceLists = xs : collectBeatLists ys
-  where (xs, ys) = spanPlus (any isStarred) entranceLists
+collectBeatLists = takeUntilEmpty (spanPlus (any isStarred))
 
 -- | Collects the pitches from its arg.
 collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
@@ -189,28 +187,26 @@ myRound f = fromInteger (round $ f * 100) / 100.0
 -- >>> map (pitch . unmark) $ head $ breakAtEachEntrance bookExample
 -- [73,69,64,45]
 breakAtEachEntrance :: Notes -> [[Marked Note]]
-breakAtEachEntrance = breakAtEachEntrance' . sortByStart . fixTheTriplets
+breakAtEachEntrance = takeUntilEmpty breakAtEachEntrance'
+                    . sortByStart
+                    . fixTheTriplets
 
 -- | Worker function for 'breakAtEachEntrance'.
-breakAtEachEntrance' :: Notes -> [[Marked Note]]
-breakAtEachEntrance' [] = []
-breakAtEachEntrance' orderedEvents@(e:_) =
-    simultaneousEvents' : breakAtEachEntrance' orderedEvents'
+breakAtEachEntrance' :: Notes -> ([Marked Note], Notes)
+breakAtEachEntrance' [] = ([], [])
+breakAtEachEntrance' orderedEvents@(e:_) = (simultaneousEvents', orderedEvents')
   where
-    simultaneousEvents' =
-      map (resetDuration newEntranceTime) simultaneousEvents
-    simultaneousEvents =
-      sortBy (comparing channel) $ collectSimultaneousEvents orderedEvents
+    simultaneousEvents' = map (resetDuration newEntranceTime)
+                        $ sortBy (comparing channel) simultaneousEvents
+    orderedEvents' = continuingEvents ++ remainingEvents
     newEntranceTime = if exitsAndEntrances
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
-    -- Sorting shouldn't be necessary here. Any note in `continuingEvents`
-    -- must start before or at the same time as the first notes in
-    -- `remainingEvents`. I think...
-    orderedEvents' = sortByStart continuingEvents ++ remainingEvents
+    -- continuingEvents could be more easily computed with mapMaybe
     continuingEvents = filter ((> 0) . duration) $
         map (resetNextDuration newEntranceTime) simultaneousEvents
-    remainingEvents = orderedEvents \\ simultaneousEvents
+    (simultaneousEvents, remainingEvents) =
+        span ((== start e) . start) orderedEvents
 
 -- | Removes the nils due to triplets.
 -- >>> head $ fixTheTriplets bookExample
@@ -460,3 +456,14 @@ spanPlus :: (a -> Bool) -> [a] -> ([a], [a])
 spanPlus p xs = case span p xs of
                   (as, (b:bs)) -> (as ++ [b], bs)
                   t -> t
+
+-- | Similar to a map.
+-- The difference is that in @'takeUntilEmpty' f xs@, @f@ is repeatedly
+-- applied to the entire list @xs@ until @xs@ is empty.
+-- >>> let f xs = let (hh, tl) = splitAt 2 xs in (sum hh, tl)
+-- >>> takeUntilEmpty f [1..10 :: Int]
+-- [3,7,11,15,19]
+takeUntilEmpty :: ([a] -> (b, [a])) -> [a] -> [b]
+takeUntilEmpty _ [] = []
+takeUntilEmpty f xs = y : takeUntilEmpty f xs'
+  where (y, xs') = f xs
