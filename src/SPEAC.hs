@@ -220,21 +220,20 @@ breakAtEachEntrance' orderedEvents@(e:_) = (simultaneousEvents', orderedEvents')
 fixTheTriplets :: Notes -> Notes
 fixTheTriplets = concatMap fixTriplets . getAllChannels
 
--- | Fixes the triplet problem!?
---   Input: The chronologically sorted notes for a single channel.
+-- | Fixes the triplet problem for a single channel of subsequent notes.
+--   Any note that doesn't end at the start of its successor but within less
+--   than 2 time units has its duration reset so that it will end exactly at the
+--   beginning of the next note.
 fixTriplets :: Notes -> Notes
 fixTriplets [] = []
 fixTriplets [a] = [a]
 fixTriplets (a:b:bs)
-  | end a == start b =
-      a : fixTriplets (b:bs)
-  | end a `withinOne` start b =
-      a {duration = start b - start a} : fixTriplets (b:bs)
-  | otherwise =
-      a : fixTriplets (b:bs)
+  | end a == start b          = a : bbs'
+  | end a `withinOne` start b = a {duration = start b - start a} : bbs'
+  | otherwise                 = a : bbs'
   where
-    withinOne :: Time -> Time -> Bool
     withinOne x y = abs (x - y) < 2
+    bbs' = fixTriplets (b:bs)
 
 -- | Collects all channels in proper order.
 --
@@ -461,7 +460,7 @@ swap (a, b) = (b, a)
 -- ("aa","")
 spanPlus :: (a -> Bool) -> [a] -> ([a], [a])
 spanPlus p xs = case span p xs of
-                  (as, (b:bs)) -> (as ++ [b], bs)
+                  (as, b:bs) -> (as ++ [b], bs)
                   t -> t
 
 -- | Similar to a map.
