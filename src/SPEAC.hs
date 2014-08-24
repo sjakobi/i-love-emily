@@ -318,12 +318,10 @@ computeDurationTensions :: Notes -> [Tension]
 computeDurationTensions events =
     zipWith addTensions durations intervalTensions
   where
-    addTensions d i = myRound $ 0.1 * fromRational d / 4000 + 0.1 * i
-    durations = durationMap $ collectBeatLists $ breakAtEachEntrance events
-    intervalTensions = createListOfTensions
-                     $ collectPitchLists
-                     $ collectBeatLists
-                     $ breakAtEachEntrance events
+    addTensions d i = myRound $ 0.1 * (fromRational d / 4000 + i)
+    durations = durationMap beatLists
+    intervalTensions = createListOfTensions $ collectPitchLists beatLists
+    beatLists = collectBeatLists $ breakAtEachEntrance events
 
 -- | Maps the duration per beat.
 durationMap :: [[[Marked Note]]] -> [Time]
