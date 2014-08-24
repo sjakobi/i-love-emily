@@ -103,10 +103,7 @@ runTheSPEACWeightings :: Notes -> Int -> Int -> Int -> [Tension]
 runTheSPEACWeightings events beginBeat totalBeats meter =
     mapAdd verticalTensions metricTensions durationTensions approachTensions
   where
-    verticalTensions = createListOfTensions
-                     $ collectPitchLists
-                     $ collectBeatLists
-                     $ breakAtEachEntrance events
+    verticalTensions = createListOfTensions $ breakIntoPitchLists events
     metricTensions = mapMetricTensions beginBeat totalBeats meter
     durationTensions = computeDurationTensions events
     approachTensions = getRootMotionWeightings events
@@ -125,10 +122,13 @@ mapMetricTensions startBeat totalBeats meter = take totalBeats $
 -----------------------------------------------------------------------------}
 
 -- | Top-level function of the tension list creators.
--- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
+-- >>> createListOfTensions $ breakIntoPitchLists bookExample
 -- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
 createListOfTensions :: [[[Pitch]]] -> [Tension]
 createListOfTensions = map (minimum . rate . translateToIntervals)
+
+breakIntoPitchLists :: Notes -> [[[Pitch]]]
+breakIntoPitchLists = collectPitchLists . collectBeatLists . breakAtEachEntrance
 
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
@@ -375,11 +375,9 @@ findMotionWeightings ps = map intervalTension
 --   'runTheSpeacWeightings', so it's probably fine.
 getChordRoots :: Notes -> [Pitch]
 getChordRoots events = zipWith getChordRoot roots onBeatPitchLists
-  where onBeatPitchLists = map (sort . nub . concat)
-                         $ collectPitchLists
-                         $ collectBeatLists
-                         $ breakAtEachEntrance events
-        roots = map (findStrongestRootInterval . derive) onBeatPitchLists
+  where
+    roots = map (findStrongestRootInterval . derive) onBeatPitchLists
+    onBeatPitchLists = map (sort . nub . concat) $ breakIntoPitchLists events
 
 getChordRoot :: Interval -> [Pitch] -> Pitch
 getChordRoot r = findUpperLower r . fromJust . findIntervalInChord r
