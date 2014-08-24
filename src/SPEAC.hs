@@ -103,14 +103,16 @@ runTheSPEACWeightings :: Notes -> Int -> Int -> Int -> [Tension]
 runTheSPEACWeightings events beginBeat totalBeats meter =
     mapAdd verticalTensions metricTensions durationTensions approachTensions
   where
-    verticalTensions = createListOfTensions $ breakIntoPitchLists events
+    verticalTensions = createListOfTensions pitchLists
     metricTensions = mapMetricTensions beginBeat totalBeats meter
     -- In Cope's original code the addition of the vertical tensions (scaled
     -- by a factor of 0.1) and the duration tensions happens already in the
     -- compute-duration-tensions function.
     durationTensions = zipWith (\v d -> myRound $ 0.1 * v + d) verticalTensions
-                     $ computeDurationTensions' events
-    approachTensions = getRootMotionWeightings events
+                     $ computeDurationTensions' beatLists
+    approachTensions = getRootMotionWeightings' pitchLists
+    pitchLists = collectPitchLists beatLists
+    beatLists = collectBeatLists $ breakAtEachEntrance events
 
 -- | Maps addition across the various parameters of the analysis.
 mapAdd :: [Tension] -> [Tension] -> [Tension] -> [Tension] -> [Tension]
@@ -130,13 +132,10 @@ mapMetricTensions startBeat totalBeats meter = take totalBeats $
 -- Note: This function is named create-listS-of-tensions in the original
 -- sources. The current naming seems more appropriat though.
 --
--- >>> createListOfTensions $ breakIntoPitchLists bookExample
+-- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
 -- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
 createListOfTensions :: [[[Pitch]]] -> [Tension]
 createListOfTensions = map (minimum . rate . translateToIntervals)
-
-breakIntoPitchLists :: Notes -> [[[Pitch]]]
-breakIntoPitchLists = collectPitchLists . collectBeatLists . breakAtEachEntrance
 
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
@@ -314,11 +313,9 @@ collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
 -- happens in the top-level runTheSPEACWeightings function.
 -- Because of this change, the the returned tensions are lower than those
 -- produced by the original Lisp function.
-computeDurationTensions' :: Notes -> [Tension]
-computeDurationTensions' events = map (fromRational . (/ 40000))
-                               $ durationMap
-                               $ collectBeatLists
-                               $ breakAtEachEntrance events
+computeDurationTensions' :: [[[Marked Note]]] -> [Tension]
+computeDurationTensions' beatLists = map (fromRational . (/ 40000))
+                                   $ durationMap beatLists
 
 -- | Maps the duration per beat.
 durationMap :: [[[Marked Note]]] -> [Time]
@@ -337,20 +334,25 @@ getDurations ontimes = ds ++ [last ds]
 
 -- | Returns the tensions due to root motions.
 --
---   The function behaves as expected in the book and in speac.lisp, line 109:
--- >>> getRootMotionWeightings bookExample
+--   This function is similar to the get-root-motion-weightings function
+--   in Cope's original code but takes its input at a further stage of
+--   processing than the original.
+--
+--   Its output is as expected in the book and in speac.lisp, line 109:
+-- >>> getRootMotionWeightings' $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance $ bookExample
 -- [0.0,0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 --
---   In contrast, line 610 in speac.lisp demands the following behavior:
--- >> getRootMotionWeightings bookExample
+--   It should be noted that speac.lisp specifies a different behavior
+--   around line 610:
+-- > getRootMotionWeightings bookExample
 -- [0.0,0.0,0.1.0.0,0.8,0.8,0.1]
 --
---   Clearly, the function can satisfy only one of these expectations.
-getRootMotionWeightings :: Notes -> [Tension]
-getRootMotionWeightings =
+--  This behavior is not satisfied.
+getRootMotionWeightings' :: [[[Pitch]]] -> [Tension]
+getRootMotionWeightings' =
     -- The zero here is to account for the first chord not having an
     -- approach.
-    (0 :) . findMotionWeightings . getChordRoots
+    (0 :) . findMotionWeightings . getChordRoots'
 
 -- | Finds the motion between chord roots. For example:
 -- >>> findMotionWeightings [45, 57, 64, 57, 62, 55, 57, 50]
@@ -361,18 +363,15 @@ findMotionWeightings ps = map intervalTension
 
 -- | Returns the chord roots of arg.
 --
---   This function does not satisfy the expected behavior as listed in
---   speac.list on line 634:
--- >> getChordRoots bookExample
+--   While similar to the original get-chord-roots function, this function does
+--   not satisfy the expected behavior as listed in speac.list on line 634:
+-- > getChordRoots bookExample
 -- [45,57,64,57,69,55,57,50]
---
---   Yet it does contribute to the correct behavior of
---   'runTheSpeacWeightings', so it's probably fine.
-getChordRoots :: Notes -> [Pitch]
-getChordRoots events = zipWith getChordRoot roots onBeatPitchLists
+getChordRoots' :: [[[Pitch]]] -> [Pitch]
+getChordRoots' pitchLists = zipWith getChordRoot roots onBeatPitchLists
   where
     roots = map (findStrongestRootInterval . derive) onBeatPitchLists
-    onBeatPitchLists = map (sort . nub . concat) $ breakIntoPitchLists events
+    onBeatPitchLists = map (sort . nub . concat) pitchLists
 
 getChordRoot :: Interval -> [Pitch] -> Pitch
 getChordRoot r = findUpperLower r . fromJust . findIntervalInChord' r
