@@ -17,27 +17,11 @@ import           Data.Map          (Map)
 import System.IO
 import System.IO.Unsafe
 
-example = unsafePerformIO $ fmap (snd . readCope) $ readFile "data/chopin-33-3.lisp"
-example2 = drop 10 $ take 20 $ example
-exampleBach =
-    [ note 0 57 1000 4, note 0 60 1000 3, note 0 69 1000 2, note 0 76 1000 1
-    , note 1000 59 1000 4, note 1000 62 1000 3, note 1000 67 1000 2, note 1000 79 1000 1
-    , note 2000 60 500 4, note 2000 64 500 3, note 2000 67 500 2, note 2000 76 500 1
-    , note 2500 59 500 4, note 2500 62 500 3, note 2500 68 500 2, note 2500 76 500 1
-    , note 3000 57 500 4, note 3000 60 500 3, note 3000 69 500 2, note 3000 76 500 1
-    , note 3500 56 500 4, note 3500 59 500 3, note 3500 71 500 2, note 3500 76 500 1
-    ]
+example     = unsafePerformIO $ fmap (snd . readCope) $ readFile "data/chopin-33-3.lisp"
+example2    = drop 10 $ take 20 $ example
+exampleBach = [("b206b",b206b)]
     where
-    note a b c d = Note { pitch = b, start = a, duration = c, channel = d }
-
-{-
-
-Note 0 
-
-((0 57 1000 4 96) (0 60 1000 3 96) (0 69 1000 2 96) (0 76 1000 1 96) (1000 59 1000 4 96)
- (1000 62 1000 3 96) (1000 67 1000 2 96) (1000 79 1000 1 96)
-
--}
+    b206b = unsafePerformIO $ fmap (readLispNotes . lines) $ readFile "data/b206b.lisp"
 
 bachChoralesInDatabases :: [(String, Notes)]
 bachChoralesInDatabases = []
