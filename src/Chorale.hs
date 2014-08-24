@@ -90,7 +90,7 @@ createBeatIts :: Database -> (String,Notes) -> Database
 createBeatIts db (dbName,notes) = db2
     where
     -- Question: What about the last beat in the measure?
-    (db2,_,_) = foldl step (db,1,True) $ zip beats (drop 1 beats)
+    (db2,_,_) = foldl step (db,1,True) $ zip beats (drop 1 beats ++ [[]])
     
     beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
     
@@ -210,7 +210,7 @@ sortByStart = sortBy (comparing start)
 -- | Get the pitches of the notes that start simultaneously
 -- with the first note.
 getOnsetNotes :: Notes -> [Pitch]
-getOnsetNotes xs@(x:_) = map pitch $ filter ((start x ==) . start) xs
+getOnsetNotes xs = map pitch $ filter ((start (head xs) ==) . start) xs
 
 -- | Collect all channel numbers that occur in the notes
 getChannelNumbersFromEvents :: Notes -> [Int]
