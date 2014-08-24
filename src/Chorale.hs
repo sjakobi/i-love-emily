@@ -109,7 +109,7 @@ createBeatIts db (dbName,notes) = db2
         startNotes       = getOnsetNotes beat1
         destinationNotes = getOnsetNotes beat2
 
-removeNils   = id
+removeNils = filter (not . null)
 
 -- | Decompose a piece of music into individual beats.
 collectBeats :: Notes -> [Notes]

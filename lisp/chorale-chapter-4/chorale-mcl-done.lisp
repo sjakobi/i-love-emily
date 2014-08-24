@@ -73,6 +73,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;
+#| Calling (remove-nils (nil nil nil 1 nil)) 
+ remove-nils returned (1)|#
+;;;;;
+
+(defun REMOVE-NILS (stuff)
+  "Removes the nils from the stuff."
+  (cond ((null stuff)())
+        ((null (first stuff))
+         (remove-nils (rest stuff)))
+        (t (cons (first stuff)
+                 (remove-nils (rest stuff))))))
+
+;;;;;
 #|  Calling (MAKE-LEXICON-NAME (57 60 69 76)) 
   MAKE-LEXICON-NAME returned BACH-57-60-69-76|#
 ;;;;;

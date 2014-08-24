@@ -102,19 +102,6 @@
                   (make-instance 'lexicon :beats (list beat-name)))
              (pushnew lexicon-name *lexicons*)))))
 
-;;;;;
-#| Calling (remove-nils (nil nil nil 1 nil)) 
- remove-nils returned (1)|#
-;;;;;
-
-(defun REMOVE-NILS (stuff)
-  "Removes the nils from the stuff."
-  (cond ((null stuff)())
-        ((null (first stuff))
-         (remove-nils (rest stuff)))
-        (t (cons (first stuff)
-                 (remove-nils (rest stuff))))))
-
 ;;;;;;;
 ;objects
 ;;;;;;;
