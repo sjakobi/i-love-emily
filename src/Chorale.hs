@@ -170,7 +170,7 @@ sortByStart = sortBy (comparing start)
 -- | Get the pitches of the notes that start simultaneously
 -- with the first note.
 getOnsetNotes :: Notes -> [Pitch]
-getOnsetNotes (x:xs) = map pitch $ filter ((start x ==) . start) xs
+getOnsetNotes xs@(x:_) = map pitch $ filter ((start x ==) . start) xs
 
 -- | Collect all channel numbers that occur in the notes
 getChannelNumbersFromEvents :: Notes -> [Int]
