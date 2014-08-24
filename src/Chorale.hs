@@ -6,11 +6,13 @@ module Chorale where
 import Types
 import ReadCope
 
-import           Data.List         (sortBy, tails)
+import           Data.List         (sortBy, tails, intersperse)
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
 import           Data.Set          (Set)
+import qualified Data.Map   as Map
+import           Data.Map          (Map)
 
 import System.IO
 import System.IO.Unsafe
@@ -45,7 +47,7 @@ bachChoralesInDatabases = []
     Database
 ------------------------------------------------------------------------------}
 data BeatIt = BeatIt
-    { events           :: Notes -- ?
+    { events           :: Notes
     , startNotes       :: [Pitch]
     , destinationNotes :: [Pitch]
     -- , startNote :: ??
@@ -56,34 +58,72 @@ data BeatIt = BeatIt
     , speac            :: ()
     -- , beat :: ??
     -- , lengthToCadence :: ??
+    } deriving (Eq,Show,Read)
+
+
+-- | Identifier for beats from the database.
+type Name     = String
+data Database = DB
+    { composeBeats :: [Name]                 -- Every beat in the database.
+    , startBeats   :: [Name]                 -- Beats at the beginnings of the pieces.
+    , composeRules :: [([VoiceLeading],Name,Time)] -- Voice leading rules.
+    , beatIts      :: Map Name BeatIt        -- Mapping from beat name to data.
+    , lexicons     :: Map [Pitch] (Set Name) -- Beats that begin with these pitches.
     }
 
-createCompleteDatabase :: [(String,Notes)] -> [BeatIt]
-createCompleteDatabase = concat . map createBeatIts
+emptyDB :: Database
+emptyDB = DB [] [] [] Map.empty Map.empty
+
+makeName :: String -> Int -> String
+makeName dbName counter = dbName ++ "-" ++ show counter
+
+makeLexiconName :: String -> [Pitch] -> String
+makeLexiconName name pitches = concat $ intersperse "-" $ name : map show pitches
+
+-- | Create a complete database from a selection of pieces.
+createCompleteDatabase :: [(String,Notes)] -> Database
+createCompleteDatabase = foldl createBeatIts emptyDB
 
 -- | Decompose a piece into individual beats
 --   and decorate them with data about adjacent beats
-createBeatIts :: (String,Notes) -> [BeatIt]
-createBeatIts (_,notes) =
-        zipWith mkBeatIt beats (drop 1 beats)
+createBeatIts :: Database -> (String,Notes) -> Database
+createBeatIts db (dbName,notes) = db2
     where
+    -- Question: What about the last beat in the measure?
+    (db2,_,_) = foldl step (db,1,True) $ zip beats (drop 1 beats)
+    
     beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
-    name  = "bach"
-
-    mkBeatIt beat next =
-            BeatIt
-                { startNotes       = startNotes
-                , destinationNotes = destinationNotes
-                , events           = beat
-                , voiceLeading     =
-                    (getRules name startNotes destinationNotes
-                    , name, start $ head $ sortByStart beat)
-                    -- also add these rules to the composer rules database
-                , speac            = ()
-                }
+    
+    step (db, counter, isStart) (beat1, beat2) = (newdb, counter+1, False)
         where
-        startNotes       = getOnsetNotes beat
-        destinationNotes = getOnsetNotes next
+        name  = makeName dbName counter
+
+        newdb = db
+            { composeBeats = name : composeBeats db
+            , startBeats   = (if isStart then (name:) else id) (startBeats db)
+            , composeRules = voiceLeading : composeRules db
+            , beatIts      = Map.insert name beatit (beatIts db)
+            , lexicons     = Map.alter putBeatIntoLexicon startNotes (lexicons db)
+            }
+        
+        putBeatIntoLexicon Nothing    = Just (Set.singleton name)
+        putBeatIntoLexicon (Just set)
+            | name `Set.member` set   = Just set
+            | otherwise               = Just (Set.insert name set)
+        
+        beatit = BeatIt
+            { startNotes       = startNotes
+            , destinationNotes = destinationNotes
+            , events           = beat1
+            , voiceLeading     = voiceLeading
+            , speac            = ()
+            }
+        
+        voiceLeading     = (getRules name startNotes destinationNotes
+                           , name, start $ head $ sortByStart beat1)
+        
+        startNotes       = getOnsetNotes beat1
+        destinationNotes = getOnsetNotes beat2
 
 removeNils   = id
 

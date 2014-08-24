@@ -12,10 +12,8 @@
 
 (setq *minimum-stack-overflow-size* 3048576)
 (defVar *COMPOSER* 'bach)
-(defVar *RULES-STORAGE* ())
 (defVar *MIX-NAMES* ())
 (defVar *MIX* ())
-(defVar *LEXICONS* ())
 (defVar BACH-DOMINANTS-TONICS ())
 (defVar BACH-START-BEATS ())
 (defVar BACH-DOMINANTS ())
@@ -80,46 +78,14 @@
                                            :speac ())))
                      do (setf counter (1+ counter))
                      do (setf beats (rest beats))
+                     ; here
                      do (put-beat-into-lexicon name)
+                     
                      do (my-push name (concat *composer* '- 'compose-beats))
                      do (if start (my-push name (concat *composer* '- 'start-beats)))
                      do (setf start nil)))
              (create-complete-database (rest db-names)))))
 
-;;;;;
-#|  Calling (MAKE-LEXICON-NAME (57 60 69 76)) 
-  MAKE-LEXICON-NAME returned BACH-57-60-69-76|#
-;;;;;
-
-(defun MAKE-LEXICON-NAME (note-numbers &optional (names *mix-names*))
-  "Creates the appropriate lexicon name for the object."
-  (cond ((null *mix*)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
-        ((null names)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
-        ((boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
-         (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
-        (t (make-lexicon-name note-numbers (mix (rest names))))))
-
-;;;;;
-#| Calling (MAKE-NAME B206B 1) 
- MAKE-NAME returned B206B-1|#
-;;;;;
-
-(defun MAKE-NAME (db-name counter)
-  "Simple synonym for imploding the dtabase name and number."
-  (implode (cons db-name  (list '- counter))))
-
-;;;;;
-#| Calling (HYPHENATE (4 7 1)) 
- HYPHENATE returned (4 - 7 - 1)|#
-;;;;;
-
-(defun HYPHENATE (note-numbers)
-  "Hyphenates the numbers in its arg."
-  (if (null note-numbers)()
-      (append (if (null (rest note-numbers))
-                (list (first note-numbers))
-                (list (first note-numbers) '-))
-              (hyphenate (rest note-numbers)))))
 
 ;;;;;
 #| Calling (PUT-BEAT-INTO-LEXICON B206B-1) 
@@ -137,16 +103,6 @@
              (pushnew lexicon-name *lexicons*)))))
 
 ;;;;;
-#|  Calling (MAKE-LEXICON-NAME (57 60 69 76)) 
-  EXIST-LEXICON returned NIL|#
-;;;;;
-
-(defun EXIST-LEXICON (lexicon-name)
-  "Sees if the lexicon exists."
-  (boundp lexicon-name))
-
-
-;;;;;
 #| Calling (remove-nils (nil nil nil 1 nil)) 
  remove-nils returned (1)|#
 ;;;;;
@@ -158,20 +114,6 @@
          (remove-nils (rest stuff)))
         (t (cons (first stuff)
                  (remove-nils (rest stuff))))))
-
-;;;;;
-#| Calling (RETURN-BEAT ((0 45 1000 4 96) (1000 57 500 4 96))) 
- RETURN-BEAT returned 1|#
-;;;;;
-
-(defun RETURN-BEAT (channel-events &optional (start-time (very-first channel-events)))
-  "Returns the beat number of the initiating event."
-  (cond ((null channel-events) nil)
-        ((and (thousandp (very-first channel-events))
-              (not (equal start-time (very-first channel-events))))
-         (/ (- (very-first channel-events) start-time) 1000))
-        (t (return-beat (rest channel-events)
-                        start-time))))
 
 ;;;;;;;
 ;objects
@@ -372,7 +314,7 @@ T|#
 
 (defun FIND-TRIAD-BEGINNING ()
   "Returns the db with a triad beginning."
-  (let* ((test (choose-one (eval (first (eval *composer*)))))
+  (let* ((test (choose-one (eval (first (eval *composer*))))) ; λ - randomly choose a bach beat symbol
          (on-beat (get-on-beat (events (eval test))(very-first (events (eval test)))))
          (pcs (create-pitch-class-set (get-pitches on-beat))))
       (if (and (triad? on-beat)
@@ -383,7 +325,8 @@ T|#
                (<= (third (first (events (eval test)))) 1000)
                (equal (length (events (eval test))) 4))
         test
-        (find-triad-beginning))))
+        (find-triad-beginning)))) ; λ - recursively call until triad found
+                                  ;     this seems rather inefficient
 
 ;;;;;
 #|  Calling (members-all (0 4 8) (2 7 11)) 

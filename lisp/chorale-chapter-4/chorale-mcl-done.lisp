@@ -15,6 +15,8 @@
 ;; λ - Most of them are actually local variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defVar *LEXICONS* ())      ; global variables collecting lexicons. Seemingly unused.
+
 (defVar *RULES-STORAGE* ()) ; local variable for GET-RULES recursive call
 
 (defVar DAVIDCOPE ())       ; local variable for splash page
@@ -69,6 +71,51 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 :: Building database from pieces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;
+#|  Calling (MAKE-LEXICON-NAME (57 60 69 76)) 
+  MAKE-LEXICON-NAME returned BACH-57-60-69-76|#
+;;;;;
+
+(defun MAKE-LEXICON-NAME (note-numbers &optional (names *mix-names*))
+  "Creates the appropriate lexicon name for the object."
+  (cond ((null *mix*)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
+        ((null names)(implode (cons *composer* (cons '- (hyphenate note-numbers)))))
+        ((boundp (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
+         (implode (cons (first names) (cons '- (hyphenate note-numbers)))))
+        (t (make-lexicon-name note-numbers (mix (rest names))))))
+
+;;;;;
+#| Calling (HYPHENATE (4 7 1)) 
+ HYPHENATE returned (4 - 7 - 1)|#
+;;;;;
+
+(defun HYPHENATE (note-numbers)
+  "Hyphenates the numbers in its arg."
+  (if (null note-numbers)()
+      (append (if (null (rest note-numbers))
+                (list (first note-numbers))
+                (list (first note-numbers) '-))
+              (hyphenate (rest note-numbers)))))
+
+;;;;;
+#|  Calling (MAKE-LEXICON-NAME (57 60 69 76)) 
+  EXIST-LEXICON returned NIL|#
+;;;;;
+
+(defun EXIST-LEXICON (lexicon-name)
+  "Sees if the lexicon exists."
+  (boundp lexicon-name))
+
+;;;;;
+#| Calling (MAKE-NAME B206B 1) 
+ MAKE-NAME returned B206B-1|#
+;;;;;
+
+(defun MAKE-NAME (db-name counter)
+  "Simple synonym for imploding the database name and number."
+  (implode (cons db-name  (list '- counter))))
+
 
 ;;;;;
 #| Calling (set-to-zero ((31000 60 1000 4 96) (31000 67 1000 3 96) (31000 72 1000 2 96) (31000 76 1000 1 96))) 
@@ -180,6 +227,22 @@
              (reduced-test (nthcdr (length test) events)))
         (cons test 
               (collect-beats reduced-test)))))
+
+;;;;;
+#| Calling (RETURN-BEAT ((0 45 1000 4 96) (1000 57 500 4 96))) 
+ RETURN-BEAT returned 1|#
+;;;;;
+; λ - This function appears to be unused.
+
+(defun RETURN-BEAT (channel-events &optional (start-time (very-first channel-events)))
+  "Returns the beat number of the initiating event."
+  (cond ((null channel-events) nil)
+        ((and (thousandp (very-first channel-events))
+              (not (equal start-time (very-first channel-events))))
+         (/ (- (very-first channel-events) start-time) 1000))
+        (t (return-beat (rest channel-events)
+                        start-time))))
+
 
 ;;;;;
 #|  Calling (COLLECT-BY-TIMING 1000 ((0 57 1000 4 96) (0 60 1000 3 96) . . .
