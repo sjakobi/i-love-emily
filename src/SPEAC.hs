@@ -105,7 +105,11 @@ runTheSPEACWeightings events beginBeat totalBeats meter =
   where
     verticalTensions = createListOfTensions $ breakIntoPitchLists events
     metricTensions = mapMetricTensions beginBeat totalBeats meter
-    durationTensions = computeDurationTensions events
+    -- In Cope's original code the addition of the vertical tensions (scaled
+    -- by a factor of 0.1) and the duration tensions happens already in the
+    -- computeDurationTensions function.
+    durationTensions = zipWith (\v d -> myRound $ 0.1 * v + d) verticalTensions
+                     $ computeDurationTensions events
     approachTensions = getRootMotionWeightings events
 
 -- | Maps addition across the various parameters of the analysis.
@@ -122,6 +126,7 @@ mapMetricTensions startBeat totalBeats meter = take totalBeats $
 -----------------------------------------------------------------------------}
 
 -- | Top-level function of the tension list creators.
+--
 -- >>> createListOfTensions $ breakIntoPitchLists bookExample
 -- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
 createListOfTensions :: [[[Pitch]]] -> [Tension]
@@ -163,7 +168,7 @@ addUnlessOctave ps p
 -- >>> rate [[7, 16]]
 -- [0.3]
 rate :: [[Interval]] -> [Tension]
-rate = map (myRound . sum . map intervalTension)
+rate = map (myRound . sum . map intervalTension)--
 
 -- Round to two decimals.
 -- >>> myRound 1.01111
@@ -230,6 +235,7 @@ fixTriplets (a:b:bs)
     withinOne x y = abs (x - y) < 2
 
 -- | Collects all channels in proper order.
+--   
 --   Note: While Cope's 'get-all-channels' function returns a (possibly
 --   empty) list of notes each for channels 1-16, this function returns
 --   only those channels that are actually present in the input.
@@ -299,19 +305,19 @@ collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
 -----------------------------------------------------------------------------}
 
 -- | Computes the tensions for events.
--- >>> computeDurationTensions bookExample
+--
+-- Note: In the original Lisp code, interval tensions are added to the
+-- duration tensions with a factor of 0.1. In this program, the addition
+-- happens in the top-level runTheSPEACWeightings function.
+-- Because of this change, the example below doesn't behave as expected in the
+-- book.
+-- >> computeDurationTensions bookExample
 -- [6.0e-2,6.0e-2,8.0e-2,6.0e-2,8.0e-2,6.0e-2,6.0e-2,6.0e-2]
 computeDurationTensions :: Notes -> [Tension]
-computeDurationTensions events =
-    zipWith addTensions durations intervalTensions
-  where
-    addTensions d i = myRound $ 0.1 * (fromRational d / 4000 + i)
-    durations = durationMap beatLists
-    -- It doesn't seem to make sense that `intervalTensions` are added
-    -- here although they will also be added in the next step in
-    -- `runTheSPEACWeightings`.
-    intervalTensions = createListOfTensions $ collectPitchLists beatLists
-    beatLists = collectBeatLists $ breakAtEachEntrance events
+computeDurationTensions events = map (fromRational . (/ 40000))
+                               $ durationMap
+                               $ collectBeatLists
+                               $ breakAtEachEntrance events
 
 -- | Maps the duration per beat.
 durationMap :: [[[Marked Note]]] -> [Time]
