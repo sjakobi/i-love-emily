@@ -72,6 +72,39 @@
 :: Building database from pieces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun CREATE-COMPLETE-DATABASE (db-names &optional (counter 1))
+  "Loads and makes proper objects out of the db-names arg."
+  (if (null db-names) t
+      (progn (let ((beats (remove-nils (collect-beats (set-to-zero 
+                                                       (sortcar #'< (eval (first db-names)))))))
+                   (name ())
+                   (start t))
+               (loop until (null beats)
+                     do (setq name (make-name (first db-names) counter))
+                     do 
+                     
+                     (let ((start-notes (get-onset-notes (first beats)))
+                           (destination-notes (get-onset-notes (second beats)))
+                           (events (first beats)))
+                       (set name
+                            (make-instance 'beat-it :start-notes start-notes
+                                           :destination-notes destination-notes
+                                           :events events
+                                           :voice-leading (first 
+                                                           (my-push (cons (get-rules start-notes destination-notes name)
+                                                                          (list name (very-first (sortcar #'< events))))
+                                                                    (concat *composer* '- 'rules)))
+                                           :speac ())))
+                     do (setf counter (1+ counter))
+                     do (setf beats (rest beats))
+                     ; here
+                     do (put-beat-into-lexicon name)
+                     
+                     do (my-push name (concat *composer* '- 'compose-beats))
+                     do (if start (my-push name (concat *composer* '- 'start-beats)))
+                     do (setf start nil)))
+             (create-complete-database (rest db-names)))))
+
 ;;;;;
 #| Calling (remove-nils (nil nil nil 1 nil)) 
  remove-nils returned (1)|#
@@ -129,6 +162,20 @@
   "Simple synonym for imploding the database name and number."
   (implode (cons db-name  (list '- counter))))
 
+;;;;;
+#| Calling (PUT-BEAT-INTO-LEXICON B206B-1) 
+ PUT-BEAT-INTO-LEXICON returned (BACH-57-60-69-76)|#
+;;;;;
+
+(defun PUT-BEAT-INTO-LEXICON (beat-name)
+  "Puts the beat arg into the appropriate lexicon."
+  (let ((lexicon-name (make-lexicon-name (start-notes (eval beat-name)))))
+    (if (and (exist-lexicon lexicon-name)
+             (not (member beat-name (beats (eval lexicon-name)) :test #'equal)))
+      (setf (beats (eval lexicon-name)) (cons beat-name (beats (eval lexicon-name))))
+      (progn (set lexicon-name
+                  (make-instance 'lexicon :beats (list beat-name)))
+             (pushnew lexicon-name *lexicons*)))))
 
 ;;;;;
 #| Calling (set-to-zero ((31000 60 1000 4 96) (31000 67 1000 3 96) (31000 72 1000 2 96) (31000 76 1000 1 96))) 
