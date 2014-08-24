@@ -1,7 +1,10 @@
 *.cabal-sandbox
 *.DS_Store
+*.hi
 *.mid
+*.o
 *.swp
 *.tmproj
 /Materials
 cabal.sandbox.config
+src/Benchmark
