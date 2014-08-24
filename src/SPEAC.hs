@@ -4,7 +4,7 @@ import qualified Data.Array         as A
 import qualified Data.IntMap.Strict as M
 import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
                                      tails, zipWith4)
-import           Data.Maybe         (fromJust, fromMaybe)
+import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
@@ -202,9 +202,8 @@ breakAtEachEntrance' orderedEvents@(e:_) = (simultaneousEvents', orderedEvents')
     newEntranceTime = if exitsAndEntrances
         then getNewExitAndEntranceTime orderedEvents (start e)
         else getNewEntranceTime orderedEvents (start e) (end e)
-    -- continuingEvents could be more easily computed with mapMaybe
-    continuingEvents = filter ((> 0) . duration) $
-        map (resetNextDuration newEntranceTime) simultaneousEvents
+    continuingEvents =
+        mapMaybe (resetNextDuration newEntranceTime) simultaneousEvents
     (simultaneousEvents, remainingEvents) =
         span ((== start e) . start) orderedEvents
 
@@ -284,12 +283,16 @@ resetDuration t n = star $ n { duration = newDuration }
     star = if end n > t then Starred else Unstarred
     newDuration = if end n < t then duration n else t - start n
 
--- | Resets events to account for overlapped beats.
-resetNextDuration :: Time -> Note -> Note
-resetNextDuration newEntranceTime n =
-    n { start = newEntranceTime
-      , duration = end n - newEntranceTime
-      }
+-- | Reset an event depending on how long it lasts.
+-- If the event lasts while new events begin, its start and duration is
+-- reset and it is returned with `Just`. Otherwise, the function returns
+-- `Nothing`.
+resetNextDuration :: Time -> Note -> Maybe Note
+resetNextDuration newEntranceTime n
+  | end n <= newEntranceTime = Nothing
+  | otherwise                = Just $ n { start = newEntranceTime
+                                        , duration = end n - newEntranceTime
+                                        }
 
 -- | Return the first simultaneous notes in the input.
 collectSimultaneousEvents :: Notes -> Notes
