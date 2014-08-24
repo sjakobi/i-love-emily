@@ -245,17 +245,12 @@ getAllChannels = map snd . M.toAscList . foldl' buildChannel M.empty
 -- | Returns the time of the very next event, be it the end or the start of
 --   a note.
 getNewExitAndEntranceTime :: Notes -> Time -> Time
-getNewExitAndEntranceTime orderedEvents startTime =
-    getNewExitAndEntranceTime' newStartTime endTime
+getNewExitAndEntranceTime orderedEvents startTime
+  | (Just t) <- newStartTime, t < endTime = t
+  | otherwise                             = endTime
   where
-    endTime = getShortestDuration startTime orderedEvents + startTime
     newStartTime = getNextStartTime startTime orderedEvents
-
--- | Worker function for 'getNewExitAndEntranceTime'
-getNewExitAndEntranceTime' :: Maybe Time -> Time -> Time
-getNewExitAndEntranceTime' (Just newStartTime) endTime
-  | endTime > newStartTime = newStartTime
-getNewExitAndEntranceTime' _ endTime = endTime
+    endTime = getShortestDuration startTime orderedEvents + startTime
 
 -- | Returns the shortest duration of all notes that start at `startTime`.
 getShortestDuration :: Time -> Notes -> Time
