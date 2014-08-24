@@ -314,8 +314,7 @@ collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
 -- Because of this change, the the returned tensions are lower than those
 -- produced by the original Lisp function.
 computeDurationTensions' :: [[[Marked Note]]] -> [Tension]
-computeDurationTensions' beatLists = map (fromRational . (/ 40000))
-                                   $ durationMap beatLists
+computeDurationTensions' = map (fromRational . (/ 40000)) . durationMap
 
 -- | Maps the duration per beat.
 durationMap :: [[[Marked Note]]] -> [Time]
