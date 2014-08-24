@@ -312,6 +312,9 @@ computeDurationTensions events =
   where
     addTensions d i = myRound $ 0.1 * (fromRational d / 4000 + i)
     durations = durationMap beatLists
+    -- It doesn't seem to make sense that `intervalTensions` are added
+    -- here although they will also be added in the next step in
+    -- `runTheSPEACWeightings`.
     intervalTensions = createListOfTensions $ collectPitchLists beatLists
     beatLists = collectBeatLists $ breakAtEachEntrance events
 
