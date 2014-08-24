@@ -16,6 +16,14 @@ The goal of this project is to reimplement parts of this program in Haskell, in 
 Bookmarks
 ---------
 
+[*Four Part Bach Chorales*](http://www.jsbchorales.net/bwv.shtml) — I think this site has MIDI files for all the Bach chorales that Cope uses in the "Chorale" program.
+
+
+[*HCodec*](http://hackage.haskell.org/package/HCodecs) — a library that provides functions to read, write and manipulate MIDI, WAVE and SoundFont2 multimedia files.
+
+* [`Codec.Midi` module](http://hackage.haskell.org/package/HCodecs-0.5/docs/Codec-Midi.html)
+
+
 [*The Music Suite*](http://hackage.haskell.org/package/music-suite) — Hans Hoglund's Haskell DSL for description, analysis, composition and manipulation of music.
 
 * [Reference documentation](http://music-suite.github.io/docs/ref/)
@@ -24,9 +32,3 @@ Bookmarks
     * Pitch literals (c,d,...)
       [`class IsPitch a`](http://music-suite.github.io/docs/api/music-pitch-literal/Music-Pitch-Literal-Pitch.html)
 * [examples](https://github.com/music-suite/music-preludes/tree/master/examples)
-
-[*HCodec*](http://hackage.haskell.org/package/HCodecs) — a library that provides functions to read, write and manipulate MIDI, WAVE and SoundFont2 multimedia files.
-
-* [`Codec.Midi` module](http://hackage.haskell.org/package/HCodecs-0.5/docs/Codec-Midi.html)
-
-
