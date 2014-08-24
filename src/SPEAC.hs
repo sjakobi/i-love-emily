@@ -328,7 +328,7 @@ durationMap = getDurations . map (start . unmark . head . head)
 -- [1000 % 1,1000 % 1,1000 % 1,1000 % 1]
 getDurations :: [Time] -> [Time]
 getDurations ontimes = ds ++ [last ds]
-  where ds = zipWith (-) (tail ontimes) ontimes
+  where ds = zipWith (-) (drop 1 ontimes) ontimes
 
 {----------------------------------------------------------------------------
     Utilities to compute approach tension
@@ -356,7 +356,7 @@ getRootMotionWeightings =
 -- [0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 findMotionWeightings :: [Pitch] -> [Tension]
 findMotionWeightings ps = map intervalTension
-                        $ zipWith interval ps (tail ps)
+                        $ zipWith interval ps (drop 1 ps)
 
 -- | Returns the chord roots of arg.
 --
@@ -382,7 +382,7 @@ getChordRoot r = findUpperLower r . fromJust . findIntervalInChord r
 -- >>> derive [41, 74, 76]
 -- [0,2,9,11]
 derive :: [Pitch] -> [Interval]
-derive = (0 :) . sort . nub . map (\(a, b) -> (b - a) `mod` 12) . pairings
+derive = sort . nub . (0 :) . map (\(a, b) -> (b - a) `mod` 12) . pairings
 
 -- | Returns the root note.
 -- >>> findUpperLower 7 (45, 64)
