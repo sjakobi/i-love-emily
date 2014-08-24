@@ -1,5 +1,6 @@
 module SPEAC where
 
+import qualified Data.Array         as A
 import qualified Data.IntMap.Strict as M
 import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
                                      zipWith4, (\\))
@@ -83,9 +84,10 @@ bookExample = map readNote input
             , (7000, 74, 1000, 1, 55)
             ]
 
--- | Interval, root placement, strength with 1 being strongest.
-rootStrengthAndRoot :: Interval -> (Interval, Int, Int)
-rootStrengthAndRoot i = head $ filter (\(a, _, _) -> a == i)
+-- | Returns the root placement and root strength (1 being strongest) for any
+--   interval < 12.
+rootStrengthAndRoot :: Interval -> (Int, Int)
+rootStrengthAndRoot = (A.!) $ A.array (0, 11) $ map (\(a, b, c) -> (a, (b, c)))
     [ (7, 0, 1), (5, 5, 2), (4, 0, 3), (8, 8, 4), (3, 0, 5), (9, 9, 6)
     , (2, 2, 7), (10, 0, 8), (1, 1, 9), (11, 0, 10), (0, 0, 11), (6, 6, 12)
     ]
@@ -395,15 +397,14 @@ derive = sort . nub . deriveAllIntervals
 -- 45
 findUpperLower :: Interval -> (Pitch, Pitch) -> Pitch
 findUpperLower root (a, b)
-  | (_, 0, _) <- rootStrengthAndRoot root = a
-  | otherwise                             = b
+  | fst (rootStrengthAndRoot root) == 0 = a
+  | otherwise                           = b
 
 -- | Returns the strongest root interval.
 -- >>> findStrongestRootInterval [0, 7, 4, 0, 0, 9, 5, 0, 8]
 -- 7
 findStrongestRootInterval :: [Interval] -> Interval
-findStrongestRootInterval =
-    minimumBy (comparing ((\(_, _, s) -> s) . rootStrengthAndRoot))
+findStrongestRootInterval = minimumBy (comparing (snd . rootStrengthAndRoot))
 
 -- | Derive all possible intervals from pitches.
 -- >>> deriveAllIntervals [45, 64, 69, 73]
