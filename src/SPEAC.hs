@@ -307,11 +307,6 @@ resetNextDuration' newEntranceTime n
                                         , duration = end n - newEntranceTime
                                         }
 
--- | Return the first simultaneous notes in the input.
-collectSimultaneousEvents :: Notes -> Notes
-collectSimultaneousEvents [] = []
-collectSimultaneousEvents ns@(n:_) = takeWhile ((== start n) . start) ns
-
 {----------------------------------------------------------------------------
     Utilities to compute duration tension
 -----------------------------------------------------------------------------}
@@ -424,9 +419,6 @@ isStarred _           = False
 -- [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
 pairings :: [a] -> [(a,a)]
 pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
-
-swap :: (a, b) -> (b, a)
-swap (a, b) = (b, a)
 
 -- | @'spanPlus' p xs@ returns a tuple where the first element is the
 -- longest prefix of @xs@ that satisfies @p@ plus the first element of the
