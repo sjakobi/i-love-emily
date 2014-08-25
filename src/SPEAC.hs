@@ -5,7 +5,7 @@ import           Data.Function      (on)
 import qualified Data.IntMap.Strict as M
 import           Data.List          (find, foldl', minimumBy, nub, nubBy, sort,
                                      sortBy, tails, zipWith4)
-import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
+import           Data.Maybe         (fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
@@ -86,13 +86,30 @@ bookExample = map readNote input
             , (7000, 74, 1000, 1, 55)
             ]
 
--- | Returns the root placement and root strength (1 being strongest) for any
---   interval < 12.
-rootStrengthAndRoot :: Interval -> (Int, Int)
-rootStrengthAndRoot = (A.!) $ A.array (0, 11) $ map (\(a, b, c) -> (a, (b, c)))
-    [ (7, 0, 1), (5, 5, 2), (4, 0, 3), (8, 8, 4), (3, 0, 5), (9, 9, 6)
-    , (2, 2, 7), (10, 0, 8), (1, 1, 9), (11, 0, 10), (0, 0, 11), (6, 6, 12)
-    ]
+-- | Return the strength of the interval formed by two pitches, 1 being
+--   the maximum strength, 12 the minimum.
+--
+--   See the linked paragraph for an explanation:
+--   http://en.wikipedia.org/wiki/Harmonic_series_(music)#Interval_strength
+intervalStrength :: Pitch -> Pitch -> Int
+intervalStrength a b =  strengths A.! (abs (a - b) `rem` 12)
+  where strengths = A.array (0, 11)
+          [ (7, 1), (5, 2), (4, 3), (8, 4), (3, 5), (9, 6)
+          , (2, 7), (10, 8), (1, 9), (11, 10), (0, 11), (6, 12)
+          ]
+
+-- | Return the root of the interval formed by two pitches.
+--
+-- See http://en.wikipedia.org/wiki/Interval_(music)#Interval_root
+-- for an explanation.
+rootNote :: Pitch -> Pitch -> Pitch
+rootNote a b
+  | interval' `elem` topRoots = max a b
+  | otherwise                 = min a b
+  where
+    topRoots = [7, 4, 3, 10, 11, 0]
+    interval' = abs (a - b) `rem` 12
+
 
 {----------------------------------------------------------------------------
     Main function for SPEAC
@@ -345,7 +362,7 @@ getRootMotionWeightings' :: [[[Pitch]]] -> [Tension]
 getRootMotionWeightings' =
     -- The zero here is to account for the first chord not having an
     -- approach.
-    (0 :) . findMotionWeightings . getChordRoots'
+    (0 :) . findMotionWeightings . map getChordRoot
 
 -- | Finds the motion between chord roots. For example:
 -- >>> findMotionWeightings [45, 57, 64, 57, 62, 55, 57, 50]
@@ -354,49 +371,18 @@ findMotionWeightings :: [Pitch] -> [Tension]
 findMotionWeightings ps = map intervalTension
                         $ zipWith interval ps (drop 1 ps)
 
--- | Returns the chord roots of arg.
---
---   While similar to the original get-chord-roots function, this function does
---   not satisfy the expected behavior as listed in speac.list on line 634:
--- > getChordRoots bookExample
--- [45,57,64,57,69,55,57,50]
-getChordRoots' :: [[[Pitch]]] -> [Pitch]
-getChordRoots' pitchLists = zipWith getChordRoot roots onBeatPitchLists
+-- | Return the root of a chord.
+-- >>> map getChordRoot $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
+-- [64,64,71,64,69,62,64,57]
+getChordRoot :: [[Pitch]] -> Pitch
+getChordRoot = uncurry rootNote . strongestInterval . pairings' . nub . concat
   where
-    roots = map (findStrongestRootInterval . derive) onBeatPitchLists
-    onBeatPitchLists = map (sort . nub . concat) pitchLists
-
-getChordRoot :: Interval -> [Pitch] -> Pitch
-getChordRoot r = findUpperLower r . fromJust . findIntervalInChord' r
-
--- | Derives all possible intervals from pitches.
--- >>> derive [55, 64, 84]
--- [0,5,8,9]
--- >>> derive [41, 74, 76]
--- [0,2,9,11]
-derive :: [Pitch] -> [Interval]
-derive = sort . nub . (0 :) . map (\(a, b) -> (b - a) `mod` 12) . pairings
-
--- | Returns the root note.
--- >>> findUpperLower 7 (45, 64)
--- 45
-findUpperLower :: Interval -> (Pitch, Pitch) -> Pitch
-findUpperLower root (a, b)
-  | fst (rootStrengthAndRoot root) == 0 = a
-  | otherwise                           = b
-
--- | Returns the strongest root interval.
--- >>> findStrongestRootInterval [0, 7, 4, 0, 0, 9, 5, 0, 8]
--- 7
-findStrongestRootInterval :: [Interval] -> Interval
-findStrongestRootInterval = minimumBy (comparing (snd . rootStrengthAndRoot))
-
--- | Returns the interval in the chord.
--- >>> findIntervalInChord' 7 [54, 62, 64, 69]
--- Just (69,62)
-findIntervalInChord' :: Interval -> [Pitch] -> Maybe (Pitch, Pitch)
-findIntervalInChord' i =
-    fmap swap . find (\(a, b) -> interval a b `rem` 12 == i) . pairings
+    strongestInterval = minimumBy (comparing (uncurry intervalStrength))
+    -- This is only for compatibility with the original source code.
+    -- Unison is the second weakest interval according to 'rootStrength' so it
+    -- will usually not be the strongest of the chord.
+    pairings' xs = let m = minimum xs
+                   in (m, m) : pairings xs
 
 {----------------------------------------------------------------------------
     Utility functions not used in the original Lisp code
