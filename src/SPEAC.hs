@@ -1,9 +1,10 @@
 module SPEAC where
 
 import qualified Data.Array         as A
+import           Data.Function      (on)
 import qualified Data.IntMap.Strict as M
-import           Data.List          (find, foldl', minimumBy, nub, sort, sortBy,
-                                     tails, zipWith4)
+import           Data.List          (find, foldl', minimumBy, nub, nubBy, sort,
+                                     sortBy, tails, zipWith4)
 import           Data.Maybe         (fromJust, fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
@@ -158,14 +159,7 @@ translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
 -- >>> removeOctaves [60, 67, 64, 72]
 -- [60,67,64]
 removeOctaves :: [Pitch] -> [Pitch]
-removeOctaves = foldl' addUnlessOctave []
-
--- | @'addUnlessOctave' ps p@ appends @p@ to @ps@ if @ps@ doesn't contain
--- an octave of @p@.
-addUnlessOctave :: [Pitch] -> Pitch -> [Pitch]
-addUnlessOctave ps p
-  | any ((== 0) . (`rem` 12) . interval p) ps = ps
-  | otherwise                                 = ps ++ [p]
+removeOctaves = nubBy ((==) `on` (`rem` 12))
 
 -- | Translates its argument into weightings based on the stored values.
 -- >>> rate [[7, 16]]
