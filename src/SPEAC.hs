@@ -109,7 +109,6 @@ intervalRoot a b
   where
     topRoots = [7, 4, 3, 10, 11, 0]
 
-
 {----------------------------------------------------------------------------
     Main function for SPEAC
 -----------------------------------------------------------------------------}
@@ -136,25 +135,6 @@ runTheSPEACWeightings events beginBeat totalBeats meter =
 mapAdd :: [Tension] -> [Tension] -> [Tension] -> [Tension] -> [Tension]
 mapAdd = zipWith4 (\a b c d -> a + b + c + d)
 
--- | Maps the metric tensions in a given meter.
-mapMetricTensions :: Int -> Int -> Int -> [Tension]
-mapMetricTensions startBeat totalBeats meter = take totalBeats $
-  map (metricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
-
-{----------------------------------------------------------------------------
-    Utilities to compute vertical tension
------------------------------------------------------------------------------}
-
--- | Top-level function of the tension list creators.
---
--- Note: This function is named create-listS-of-tensions in the original
--- sources. The current naming seems more appropriat though.
---
--- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
--- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
-createListOfTensions :: [[[Pitch]]] -> [Tension]
-createListOfTensions = map (minimum . rate . translateToIntervals)
-
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
 collectBeatLists = takeUntilEmpty (spanPlus (any isStarred))
@@ -162,32 +142,6 @@ collectBeatLists = takeUntilEmpty (spanPlus (any isStarred))
 -- | Collects the pitches from its arg.
 collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
 collectPitchLists = map (map (map (pitch . unmark)))
-
--- | Translates groups of pitches into intervals.
--- >>> translateToIntervals [[73, 69, 64, 45]]
--- [[19,28]]
-translateToIntervals :: [[Pitch]] -> [[Interval]]
-translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
-  where intervalsToBassNote (n:ns) = map (subtract n) ns
-        intervalsToBassNote []     = error "Bad input"
-
--- | Removes all octave doublings.
--- >>> removeOctaves [60, 67, 64, 72]
--- [60,67,64]
-removeOctaves :: [Pitch] -> [Pitch]
-removeOctaves = nubBy ((==) `on` (`rem` 12))
-
--- | Translates its argument into weightings based on the stored values.
--- >>> rate [[7, 16]]
--- [0.3]
-rate :: [[Interval]] -> [Tension]
-rate = map (myRound . sum . map intervalTension)--
-
--- | Round to two decimals.
--- >>> myRound 1.01111
--- 1.01
-myRound :: Double -> Double
-myRound f = fromInteger (round $ f * 100) / 100.0
 
 {----------------------------------------------------------------------------
     Break notes into non-overlapping groups of simultaneous events
@@ -306,6 +260,55 @@ resetNextDuration' newEntranceTime n
   | otherwise                = Just $ n { start = newEntranceTime
                                         , duration = end n - newEntranceTime
                                         }
+
+{----------------------------------------------------------------------------
+    Utilities to compute vertical tension
+-----------------------------------------------------------------------------}
+
+-- | Top-level function of the tension list creators.
+--
+-- Note: This function is named create-listS-of-tensions in the original
+-- sources. The current naming seems more appropriat though.
+--
+-- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
+-- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
+createListOfTensions :: [[[Pitch]]] -> [Tension]
+createListOfTensions = map (minimum . rate . translateToIntervals)
+
+-- | Translates groups of pitches into intervals.
+-- >>> translateToIntervals [[73, 69, 64, 45]]
+-- [[19,28]]
+translateToIntervals :: [[Pitch]] -> [[Interval]]
+translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
+  where intervalsToBassNote (n:ns) = map (subtract n) ns
+        intervalsToBassNote []     = error "Bad input"
+
+-- | Removes all octave doublings.
+-- >>> removeOctaves [60, 67, 64, 72]
+-- [60,67,64]
+removeOctaves :: [Pitch] -> [Pitch]
+removeOctaves = nubBy ((==) `on` (`rem` 12))
+
+-- | Translates its argument into weightings based on the stored values.
+-- >>> rate [[7, 16]]
+-- [0.3]
+rate :: [[Interval]] -> [Tension]
+rate = map (myRound . sum . map intervalTension)
+
+-- | Round to two decimals.
+-- >>> myRound 1.01111
+-- 1.01
+myRound :: Double -> Double
+myRound f = fromInteger (round $ f * 100) / 100.0
+
+{----------------------------------------------------------------------------
+    Metric tension computation
+-----------------------------------------------------------------------------}
+
+-- | Maps the metric tensions in a given meter.
+mapMetricTensions :: Int -> Int -> Int -> [Tension]
+mapMetricTensions startBeat totalBeats meter = take totalBeats $
+  map (metricTension meter) $ [startBeat..meter] ++ cycle [1..meter]
 
 {----------------------------------------------------------------------------
     Utilities to compute duration tension
