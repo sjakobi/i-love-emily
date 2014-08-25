@@ -102,8 +102,8 @@ intervalStrength =  (strengths A.!) .: interval
 --
 -- See http://en.wikipedia.org/wiki/Interval_(music)#Interval_root
 -- for an explanation.
-rootNote :: Pitch -> Pitch -> Pitch
-rootNote a b
+intervalRoot :: Pitch -> Pitch -> Pitch
+intervalRoot a b
   | interval a b `elem` topRoots = max a b
   | otherwise                    = min a b
   where
@@ -368,7 +368,8 @@ findMotionWeightings ps = zipWith (intervalTension .: interval) ps (drop 1 ps)
 -- >>> map getChordRoot $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
 -- [64,64,71,64,69,62,64,57]
 getChordRoot :: [[Pitch]] -> Pitch
-getChordRoot = uncurry rootNote . strongestInterval . pairings' . nub . concat
+getChordRoot =
+    uncurry intervalRoot . strongestInterval . pairings' . nub . concat
   where
     strongestInterval = minimumBy (comparing (uncurry intervalStrength))
     -- This is only for compatibility with the original source code.
