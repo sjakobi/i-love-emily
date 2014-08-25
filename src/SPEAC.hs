@@ -92,7 +92,7 @@ bookExample = map readNote input
 --   See the linked paragraph for an explanation:
 --   http://en.wikipedia.org/wiki/Harmonic_series_(music)#Interval_strength
 intervalStrength :: Pitch -> Pitch -> Int
-intervalStrength a b =  strengths A.! (abs (a - b) `rem` 12)
+intervalStrength =  (strengths A.!) .: interval
   where strengths = A.array (0, 11)
           [ (7, 1), (5, 2), (4, 3), (8, 4), (3, 5), (9, 6)
           , (2, 7), (10, 8), (1, 9), (11, 10), (0, 11), (6, 12)
@@ -104,11 +104,10 @@ intervalStrength a b =  strengths A.! (abs (a - b) `rem` 12)
 -- for an explanation.
 rootNote :: Pitch -> Pitch -> Pitch
 rootNote a b
-  | interval' `elem` topRoots = max a b
-  | otherwise                 = min a b
+  | interval a b `elem` topRoots = max a b
+  | otherwise                    = min a b
   where
     topRoots = [7, 4, 3, 10, 11, 0]
-    interval' = abs (a - b) `rem` 12
 
 
 {----------------------------------------------------------------------------
@@ -368,8 +367,7 @@ getRootMotionWeightings' =
 -- >>> findMotionWeightings [45, 57, 64, 57, 62, 55, 57, 50]
 -- [0.0,0.1,0.1,0.55,0.1,0.8,0.1]
 findMotionWeightings :: [Pitch] -> [Tension]
-findMotionWeightings ps = map intervalTension
-                        $ zipWith interval ps (drop 1 ps)
+findMotionWeightings ps = zipWith (intervalTension .: interval) ps (drop 1 ps)
 
 -- | Return the root of a chord.
 -- >>> map getChordRoot $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
@@ -399,7 +397,7 @@ end n = start n + duration n
 
 -- | Determine the interval between two pitches.
 interval :: Pitch -> Pitch -> Interval
-interval a b = abs $ a - b
+interval a b = abs (a - b) `rem` 12
 
 -- | Helper function to convert from Cope's "event" type to 'Note'.
 readNote :: (Time, Pitch, Time, Int, Int) -> Note
@@ -453,3 +451,7 @@ takeUntilEmpty :: ([a] -> (b, [a])) -> [a] -> [b]
 takeUntilEmpty _ [] = []
 takeUntilEmpty f xs = y : takeUntilEmpty f xs'
   where (y, xs') = f xs
+
+infixr 9 .:
+(.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+(.:) = (.) . (.)
