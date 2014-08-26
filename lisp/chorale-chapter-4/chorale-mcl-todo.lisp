@@ -335,21 +335,6 @@ T|#
                     '(1000)
                     (nthcdr 3 event))
             (chop event (+ begin-time 1000)(- duration 1000)))))
-  
-;;;;;
-#| Calling (REMAINDER (76000 41 1500 4 96)) 
- REMAINDER returned ((77000 41 500 4 96))|#
-;;;;;
-
-(defun REMAINDER (event &optional (begin-time (first event))(duration (third event)))
-  "Returns the remainder of the beat."
-  (cond ((null event)())
-        ((= duration 1000)())
-        ((< duration 1000) (list (append (list begin-time)
-                                         (list (second event))
-                                         (list duration)
-                                         (nthcdr 3 event))))
-      (t (remainder event (+ begin-time 1000)(- duration 1000)))))
 
 ;;;;;
 #| Calling (GET-FULL-BEAT ((77000 41 500 4 96) (77500 43 500 4 96))) 
@@ -388,20 +373,6 @@ T|#
         (t (remainders (rest events)
                        (+ begin-time (third (first events)))
                        (+ (third (first events)) duration)))))
-
-;;;;;
-#| Calling (REMOVE-FULL-BEAT ((77000 41 500 4 96) (77500 43 500 4 96))) 
- REMOVE-FULL-BEAT returned NIL|#
-;;;;;
-
-(defun REMOVE-FULL-BEAT (events &optional (begin-time (very-first events))(duration 0))
-  "Removes one full beat from the events arg."
-  (cond ((null events)())
-        ((>= (+ duration (third (first events))) 1000)
-         (rest events))
-        (t (remove-full-beat (rest events)
-                             (+ begin-time (third (first events)))
-                             (+ (third (first events)) duration)))))
 
 ;;;;;
 #| Calling (GET-OTHER-CHANNELS 4 ((77000 41 500 4 96) (76000 53 1500 3 96) (76000 60 1500 2 96) (76000 69 1500 1 96) (77500 43 500 4 96) (77500 50 500 3 96) (77500 59 500 2 96) (77500 67 500 1 96))) 

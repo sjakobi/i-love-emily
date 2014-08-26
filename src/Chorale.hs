@@ -274,6 +274,34 @@ plotTimings xs = [(channel x, end x) | x <- xs]
 collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
 collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ] 
 
+
+-- | Remove all notes that beign within a beat from the first note.
+--
+-- Note: This function adds up all durations and assumes that the
+-- events are consecutive. In particular, it only makes sense when
+-- applied to a single channel.
+--
+-- >>> removeFullBeat [note 77000 41 500 4, note 77500 43 500 4]
+-- []
+removeFullBeat :: Notes -> Notes
+removeFullBeat xs = drop segment xs
+    where
+    segment = length $ takeWhile (< 1000) $ scanl (+) 0 $ map duration xs
+
+-- | Take the last part of the note that lasts only a fraction of a beat. 
+--
+-- >>> remainder $ note 76000 41 1500 4
+-- [Note {pitch = 41, start = 77000 % 1, duration = 500 % 1, channel = 4}]
+remainder :: Note -> [Note]
+remainder note
+        | 1000*beats == duration note = []
+        | otherwise                   = [note
+            { start    = start    note + 1000*beats
+            , duration = duration note - 1000*beats
+            }]
+    where
+    beats = fromIntegral $ floor $ duration note / 1000
+
 {-----------------------------------------------------------------------------
     Composition
 ------------------------------------------------------------------------------}

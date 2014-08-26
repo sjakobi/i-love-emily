@@ -538,6 +538,38 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
         (t (cons (first exploded-lexicon)
                  (get-db-n (rest exploded-lexicon))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Timing utilities for composition
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;
+#| Calling (REMOVE-FULL-BEAT ((77000 41 500 4 96) (77500 43 500 4 96))) 
+ REMOVE-FULL-BEAT returned NIL|#
+;;;;;
+
+(defun REMOVE-FULL-BEAT (events &optional (begin-time (very-first events))(duration 0))
+  "Removes one full beat from the events arg."
+  (cond ((null events)())
+        ((>= (+ duration (third (first events))) 1000)
+         (rest events))
+        (t (remove-full-beat (rest events)
+                             (+ begin-time (third (first events)))
+                             (+ (third (first events)) duration)))))
+
+;;;;;
+#| Calling (REMAINDER (76000 41 1500 4 96)) 
+ REMAINDER returned ((77000 41 500 4 96))|#
+;;;;;
+
+(defun REMAINDER (event &optional (begin-time (first event))(duration (third event)))
+  "Returns the remainder of the beat."
+  (cond ((null event)())
+        ((= duration 1000)())
+        ((< duration 1000) (list (append (list begin-time)
+                                         (list (second event))
+                                         (list duration)
+                                         (nthcdr 3 event))))
+      (t (remainder event (+ begin-time 1000)(- duration 1000)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
