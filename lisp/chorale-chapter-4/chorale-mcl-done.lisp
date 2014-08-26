@@ -380,18 +380,6 @@ FIND-ALIGNMENT-IN-ALL-CHANNELS returned 1000|#
         (t (find-alignment point (rest channel)))))
 
 ;;;;;
-#|   Calling (GET-CHANNEL-NUMBERS-FROM-EVENTS ((0 57 1000 4 96) (0 60 1000 3 96) . . .
-GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
-;;;;;
-
-(defun GET-CHANNEL-NUMBERS-FROM-EVENTS (events &optional (channels ()))
-  "simply gets the channel numbers from the music"
-  (cond ((null events) channels)
-        ((not (member (fourth (first events)) channels :test #'equal))
-         (get-channel-numbers-from-events (rest events) (cons (fourth (first events)) channels)))
-        (t (get-channel-numbers-from-events (rest events) channels))))
-
-;;;;;
 #|Calling (COLLECT-TIMINGS-BY-CHANNEL ((4 1000) (3 1000) (2 1000)  . . .
    COLLECT-TIMINGS-BY-CHANNEL returned ((1 1000) (1 2000) (1 2500) (1 3000) (1 3500) (1 4000) . . .|#
 ;;;;;
@@ -415,6 +403,34 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
       (cons (list (fourth (first events))(+ (very-first events)(third (first events))))
             (plot-timings (rest events)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Channel utilities
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;
+#|   Calling (GET-CHANNEL-NUMBERS-FROM-EVENTS ((0 57 1000 4 96) (0 60 1000 3 96) . . .
+GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
+;;;;;
+
+(defun GET-CHANNEL-NUMBERS-FROM-EVENTS (events &optional (channels ()))
+  "simply gets the channel numbers from the music"
+  (cond ((null events) channels)
+        ((not (member (fourth (first events)) channels :test #'equal))
+         (get-channel-numbers-from-events (rest events) (cons (fourth (first events)) channels)))
+        (t (get-channel-numbers-from-events (rest events) channels))))
+
+;;;;;
+#| Calling (GET-OTHER-CHANNELS 4 ((77000 41 500 4 96) (76000 53 1500 3 96) (76000 60 1500 2 96) (76000 69 1500 1 96) (77500 43 500 4 96) (77500 50 500 3 96) (77500 59 500 2 96) (77500 67 500 1 96))) 
+ GET-OTHER-CHANNELS returned ((76000 53 1500 3 96) (76000 60 1500 2 96) (76000 69 1500 1 96) (77500 50 500 3 96) (77500 59 500 2 96) (77500 67 500 1 96))|#
+;;;;;
+
+(defun GET-OTHER-CHANNELS (channel-not-to-get events)
+  "Returns all but the first arg channeled events."
+  (cond ((null events)())
+        ((equal (fourth (first events)) channel-not-to-get)
+         (get-other-channels channel-not-to-get (rest events)))
+        (t (cons (first events)
+                 (get-other-channels channel-not-to-get (rest events))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Pitch utilities

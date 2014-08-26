@@ -221,6 +221,10 @@ getOnsetNotes xs = map pitch $ filter ((start (head xs) ==) . start) xs
 getChannelNumbersFromEvents :: Notes -> [Int]
 getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel 
 
+-- | Return all Notes that are not played on the indicated channel.
+getOtherChannels :: Channel -> Notes -> Notes
+getOtherChannels c = filter ((/= c) . channel)
+
 {-----------------------------------------------------------------------------
     Time utilities
 ------------------------------------------------------------------------------}
