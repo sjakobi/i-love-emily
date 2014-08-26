@@ -3,7 +3,7 @@ module SPEAC where
 import qualified Data.Array         as A
 import           Data.Function      (on)
 import qualified Data.IntMap.Strict as M
-import           Data.List          (find, foldl', minimumBy, nub, nubBy, sort,
+import           Data.List          (find, foldl', minimumBy, nub, nubBy,
                                      sortBy, tails, zipWith4)
 import           Data.Maybe         (fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
@@ -273,15 +273,17 @@ resetNextDuration' newEntranceTime n
 -- >>> createListOfTensions $ collectPitchLists $ collectBeatLists $ breakAtEachEntrance bookExample
 -- [0.3,0.3,0.5,0.3,0.5,0.3,0.3,0.3]
 createListOfTensions :: [[[Pitch]]] -> [Tension]
-createListOfTensions = map (minimum . rate . translateToIntervals)
+createListOfTensions = map (minimum . map (rate' . translateToIntervals'))
 
--- | Translates groups of pitches into intervals.
--- >>> translateToIntervals [[73, 69, 64, 45]]
--- [[19,28]]
-translateToIntervals :: [[Pitch]] -> [[Interval]]
-translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
+-- | Returns the unique (modulo 12) intervals between the input pitches and
+-- their lowest note.
+-- >>> translateToIntervals' [73, 69, 64, 45]
+-- [28,19]
+translateToIntervals' :: [Pitch] -> [Interval]
+translateToIntervals' = intervalsToBassNote . removeOctaves . prependBassNote
   where intervalsToBassNote (n:ns) = map (subtract n) ns
-        intervalsToBassNote []     = error "Bad input"
+        intervalsToBassNote []     = error "Impossible!"
+        prependBassNote ns = minimum ns : ns
 
 -- | Removes all octave doublings.
 -- >>> removeOctaves [60, 67, 64, 72]
@@ -289,11 +291,11 @@ translateToIntervals = map (intervalsToBassNote . removeOctaves . sort)
 removeOctaves :: [Pitch] -> [Pitch]
 removeOctaves = nubBy ((==) `on` (`rem` 12))
 
--- | Translates its argument into weightings based on the stored values.
--- >>> rate [[7, 16]]
--- [0.3]
-rate :: [[Interval]] -> [Tension]
-rate = map (myRound . sum . map intervalTension)
+-- | Returns the rounded sum of the tensions for the input intervals.
+-- >>> rate' [7, 16]
+-- 0.3
+rate' :: [Interval] -> Tension
+rate' = myRound . sum . map intervalTension
 
 -- | Round to two decimals.
 -- >>> myRound 1.01111
