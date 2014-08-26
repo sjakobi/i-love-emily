@@ -16,6 +16,10 @@ data Note = Note
     , channel  :: Channel
     } deriving (Eq,Read,Show)
 
+-- | Helper function for building notes from Lisp notation.
+note :: Time -> Pitch -> Time -> Channel -> Note
+note a b c d = Note { pitch = b, start = a, duration = c, channel = d }
+
 end :: Note -> Time
 end x = start x + duration x
 
