@@ -11,7 +11,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-:: Mutable variables
+;; Mutable variables
 ;; λ - Most of them are actually local variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +24,7 @@
 (defVar DAVIDCOPE1 ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-:: Splash window
+;; Splash window
 ;; λ - no need to translate
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +69,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-:: Building database from pieces
+;; Building database from pieces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun CREATE-COMPLETE-DATABASE (db-names &optional (counter 1))
@@ -415,6 +415,11 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
       (cons (list (fourth (first events))(+ (very-first events)(third (first events))))
             (plot-timings (rest events)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Pitch utilities
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;;;
 #| Calling (CREATE-PITCH-CLASS-SET (64 67 71)) 
  CREATE-PITCH-CLASS-SET returned (4 7 11)|#
@@ -437,8 +442,66 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
       (cons (mod (first pitches) 12)
             (create-pc-set (rest pitches)))))
 
+;;;;;
+#| Calling (triad? ((111000 40 500 4 96) (111000 55 500 3 96) (111000 64 1000 2 96) (111000 72 1000 1 96))) 
+ triad? returned t|#
+;;;;;
+
+(defun TRIAD? (events)
+  "Checks to see if the events are a triad."
+  (let ((pitch-classes (get-smallest-set (create-pitch-class-set (get-pitches events)))))
+    (and (equal (length pitch-classes) 3)
+         (and (> (- (second pitch-classes)(first pitch-classes)) 2)
+              (< (- (second pitch-classes)(first pitch-classes)) 5))
+         (and (> (- (third pitch-classes)(second pitch-classes)) 2)
+              (< (- (third pitch-classes)(second pitch-classes)) 5)))))
+
+;;;;;
+#|  Calling (get-smallest-set (0 4 7)) 
+  get-smallest-set returned (0 4 7)|#
+;;;;;
+
+(defun GET-SMALLEST-SET (set)
+  "Returns the set with the smallest outer boundaries."
+  (let* ((projected-sets (project set))
+         (set-differentials (get-intervals projected-sets)))
+    (nth (position (first (my-sort #'< set-differentials)) set-differentials) projected-sets)))
+
+;;;;;
+#|   Calling (project (0 4 7)) 
+   project returned ((0 4 7) (4 7 12) (7 12 16))|#
+;;;;;
+
+(defun PROJECT (set &optional (length (length set))(times 0))
+  "Projects the pc-set through its inversions."
+  (if (equal length times)()
+      (cons set
+            (project (append (rest set)(list (+ 12 (first set)))) length (1+ times)))))
+
+;;;;;
+#| Calling (get-intervals ((0 4 7) (4 7 12) (7 12 16))) 
+ get-intervals returned (7 8 9)|#
+;;;;;
+
+(defun GET-INTERVALS (sets)
+  "Returns the intervals in the sets."
+  (if  (null sets)()
+       (cons (abs (apply #'+ (get-interval (first sets))))
+             (get-intervals (rest sets)))))
+
+;;;;;
+#|  Calling (get-interval (0 4 7)) 
+  get-interval returned (4 3)|#
+;;;;;
+
+(defun GET-INTERVAL (set)
+  "Returns the intervals between set members."
+  (if (null (rest set))
+    () (cons (- (second set)(first set))
+             (get-interval (rest set)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-:: Composition from a database
+;; Composition from a database
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;
@@ -478,7 +541,7 @@ PLOT-TIMINGS returned ((4 1000) (3 1000) (2 1000) (1 1000) . . .|#
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-:: Close splash window
+;; Close splash window
 ;; λ - no need to translate
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

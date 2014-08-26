@@ -279,64 +279,6 @@ T|#
         (t ())))
 
 ;;;;;
-#| Calling (triad? ((111000 40 500 4 96) (111000 55 500 3 96) (111000 64 1000 2 96) (111000 72 1000 1 96))) 
- triad? returned t|#
-;;;;;
-
-(defun TRIAD? (events)
-  "Checks to see if the events are a triad."
-  (let ((pitch-classes (get-smallest-set (create-pitch-class-set (get-pitches events)))))
-    (and (equal (length pitch-classes) 3)
-         (and (> (- (second pitch-classes)(first pitch-classes)) 2)
-              (< (- (second pitch-classes)(first pitch-classes)) 5))
-         (and (> (- (third pitch-classes)(second pitch-classes)) 2)
-              (< (- (third pitch-classes)(second pitch-classes)) 5)))))
-
-;;;;;
-#|  Calling (get-smallest-set (0 4 7)) 
-  get-smallest-set returned (0 4 7)|#
-;;;;;
-
-(defun GET-SMALLEST-SET (set)
-  "Returns the set with the smallest outer boundaries."
-  (let* ((projected-sets (project set))
-         (set-differentials (get-intervals projected-sets)))
-    (nth (position (first (my-sort #'< set-differentials)) set-differentials) projected-sets)))
-
-;;;;;
-#|   Calling (project (0 4 7)) 
-   project returned ((0 4 7) (4 7 12) (7 12 16))|#
-;;;;;
-
-(defun PROJECT (set &optional (length (length set))(times 0))
-  "Projects the pc-set through its inversions."
-  (if (equal length times)()
-      (cons set
-            (project (append (rest set)(list (+ 12 (first set)))) length (1+ times)))))
-
-;;;;;
-#| Calling (get-intervals ((0 4 7) (4 7 12) (7 12 16))) 
- get-intervals returned (7 8 9)|#
-;;;;;
-
-(defun GET-INTERVALS (sets)
-  "Returns the intervals in the sets."
-  (if  (null sets)()
-       (cons (abs (apply #'+ (get-interval (first sets))))
-             (get-intervals (rest sets)))))
-
-;;;;;
-#|  Calling (get-interval (0 4 7)) 
-  get-interval returned (4 3)|#
-;;;;;
-
-(defun GET-INTERVAL (set)
-  "Returns the intervals between set members."
-  (if (null (rest set))
-    () (cons (- (second set)(first set))
-             (get-interval (rest set)))))
-
-;;;;;
 #| Calling (match-tonic-minor ((5000 55 1000 4 96) (5000 67 1000 3 96) (5000 62 1000 2 96) (5000 71 1000 1 96))) 
  match-tonic-minor returned nil|#
 ;;;;;

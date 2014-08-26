@@ -7,7 +7,7 @@ import Types
 import ReadCope
 
 import           Data.Char         (ord)
-import           Data.List         (sortBy, tails, intersperse)
+import           Data.List         (sort, sortBy, inits, tails, intersperse)
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
@@ -178,6 +178,26 @@ reduceInterval x
 -- A pitch class is the pitch modulo octaves. Middle C has pitch class 0.
 createPitchClassSet :: [Pitch] -> Set Pitch
 createPitchClassSet = Set.fromList . map (`mod` 12)
+
+-- | Test whether a voicing forms a triad (major, minor, diminished, augmented),
+-- in any inversion.
+isTriad :: [Pitch] -> Bool
+isTriad = any isRootTriad . inversions . Set.toAscList . createPitchClassSet
+    where
+    isRootTriad [x,y,z] = isThird (y-x) && isThird (z-y)
+    isRootTriad _       = False
+
+-- | List all distinct inversions of a chord,
+-- obtained by successively transposing the root note up one octave.
+--
+-- >>> inversions [0,4,7]
+-- [[0,4,7],[4,7,12],[7,12,16]]
+inversions :: [Pitch] -> [[Pitch]]
+inversions xs = init $ zipWith (\x y -> y ++ map (+12) x) (inits xs) (tails xs)
+
+-- | Test whether an interval is a minor or major third.
+isThird :: Interval -> Bool
+isThird x = x == 3 || x == 4
 
 {-----------------------------------------------------------------------------
     Note Utilities
