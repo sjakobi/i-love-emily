@@ -19,6 +19,12 @@
 
 (defVar *RULES-STORAGE* ()) ; local variable for GET-RULES recursive call
 
+(defVar *HISTORY* ())       ; local variables collecting some information
+(defVar *HISTORIES* ())     ; about the actions taken during automatic composition.
+(defVar *COMPOSE-NUMBER* 0) ; Seem to be used mainly for debugging purposes.
+(defVar *SAVE-EVENTS* ())   ; *history* is used as function output
+
+
 (defVar DAVIDCOPE ())       ; local variable for splash page
 (defVar COPE-TEXT ())
 (defVar DAVIDCOPE1 ())
@@ -519,6 +525,77 @@ GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Composition from a database
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;
+#|? (COMPOSE-BACH)
+T|#
+;;;;;
+
+(defun COMPOSE-BACH ()
+  "The top-level compose function."
+  (compose-b)
+  (if (or (null *events*)
+          (< (let ((it (my-last (sortcar #'< *events*))))
+               (+ (first it)(third it)))
+             15000)
+          (> (let ((it (my-last (sortcar #'< *events*))))
+               (+ (first it)(third it)))
+             200000)
+          (not (wait-for-cadence *events*))
+          (check-for-parallel *events*)
+          (null *end*))
+    (compose-bach) 
+    (progn (setq *save-events* *events*)
+           (setq *events* (ensure-necessary-cadences (sortcar #'< *events*)))
+           (if (not (check-mt (get-on-beat *events* (very-first *events*))))
+             (setq *events* (delay-for-upbeat *events*)))
+           (if (and (null *early-exit?*)(equal *composer* 'bach))
+             (setq *events* 
+                   (cadence-collapse (transpose-to-bach-range *events*)))
+             (setq *events* ()))
+           t)))
+
+;;;;;
+#| Calling (COMPOSE-B) 
+ COMPOSE-B returned ((1 (B1605B-36 B6402-31 B3006B-21 . . .|#
+;;;;;
+
+(defun COMPOSE-B (&optional (counter 0))
+  "The real horse for compose-bach."
+  (setq *end* ())
+  (setq *history* ())
+  (setq *events* 
+        (let ((current-beat 
+               (find-triad-beginning)))
+          (if (match-tonic-minor (firstn 4 (events (eval current-beat))))
+            (setq *tonic* 'minor)(setq *tonic* 'major))
+          (apply #'append 
+                 (re-time
+                  (append
+                   (loop until (or (setq *early-exit?* (null (destination-notes (eval current-beat))))
+                                   (if (and (> counter 36)
+                                            (if (equal *tonic* 'minor)
+                                              (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                   (match-tonic-minor (events (eval current-beat))))
+                                              (and (> (find-events-duration (events (eval current-beat))) *beat-size*)
+                                                   (match-bach-tonic (events (eval current-beat))))))
+                                     (progn (setq *end* t) t)))
+                         do (push current-beat *history*)
+                         collect (events (eval current-beat))
+                         do (setq *previous-beat* current-beat)
+                         do (setq current-beat 
+                                  (choose-one 
+                                   (let ((beat-choices (beats (eval (make-lexicon-name (destination-notes (eval current-beat)))))))
+                                     (if (null (rest beat-choices)) beat-choices (my-remove (list *previous-beat* (incf-beat *previous-beat*)) beat-choices)))))
+                         do (incf counter))
+                   (progn (push current-beat *history*)
+                          (list (events 
+                                 (eval current-beat)))))))))
+  (if (and (null *early-exit?*)(equal *composer* 'bach))
+    ;(setq *events* (transpose-to-bach-range *events*))
+    *events* (setq *events* ()))
+  (setq *history* (reverse *history*))
+  (if *end* (push (list (1+ *compose-number*) *history*) *histories*)))
 
 ;;;;;
 #| Calling (incf-beat b35300b-42) 

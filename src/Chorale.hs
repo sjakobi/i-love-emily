@@ -4,7 +4,8 @@
 module Chorale where
 
 import           Data.Char         (ord)
-import           Data.List         (sort, sortBy, inits, tails, intersperse, (\\))
+import           Data.List         ( (\\), inits, intersperse
+                                   , sort, sortBy, tails)
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
@@ -325,4 +326,105 @@ incfBeat :: Name -> Name
 incfBeat name = getDBName name ++ "-" ++ (show $ ord (last name) - ord '0' + 1)
     where
     getDBName = takeWhile (/= '-')
+
+-- | Compose a chorale by stitching together beats from the database
+-- and ensuring that the piece has a proper cadence.
+composeBach :: Database -> Prob Notes
+composeBach db = do
+    mbeats <- composeMaybePiece db
+    let
+        Just names = mbeats
+        notes = reTime $ concat $ map events
+              $ catMaybes [Map.lookup name (beatIts db) | name <- names]
+        lastNote = last notes
+        
+        continue
+            = isNothing mbeats
+            -- TODO: Include this condition later
+            -- || end lastNote <  15000
+            || end lastNote > 200000
+            || not (waitForCadence notes)
+            || checkForParallel notes
+
+    if continue 
+        then composeBach db
+        else return $ finish notes
+
+    where
+    finish = id
+    {- TODO: add this later
+    finish = cadenceCollapse . transposeToBachRange
+           . fixUpBeat . ensureNecessaryCadences
+
+    fixUpBeat notes =
+        if checkMT $ getOnBeat $ start $ head notes
+        then notes
+        else delayForUpbeat notes
+    -}
+    
+reTime = id
+waitForCadence   _= True
+checkForParallel _ = False
+
+data Mood = Major | Minor
+    deriving (Eq,Ord,Show,Read)
+
+-- | Try to compose a complete piece by stitching together beats from the database.
+-- May fail.
+composeMaybePiece :: Database -> Prob (Maybe [Name])
+composeMaybePiece db = do
+    mbeat <- pickTriadBeginning db
+    case mbeat of
+        Nothing   -> return Nothing
+        Just (name, mood) -> do
+            let
+                loop :: Int -> Name -> Prob (Maybe [Name])
+                loop counter name
+                    | null (destinationNotes beatit)     = return Nothing
+                    | counter > 5 -- 36
+                      && findEventsDuration notes > 1000
+                      && (if mood == Minor
+                            then matchTonicMinor notes
+                            else matchBachTonic  notes)  = return $ Just []
+                    | otherwise                          = do
+                        case pickNextBeat db name of
+                            Nothing     -> return Nothing
+                            Just pname' -> do
+                                name'   <- pname'
+                                mresult <- loop (counter+1) name'
+                                return $ fmap (name:) mresult
+                    
+                    where
+                    Just beatit = Map.lookup name (beatIts db)
+                    notes       = events beatit
+            
+            return . fmap (++ [name]) =<< loop 0 name
+
+matchTonicMinor _ = True
+matchBachTonic  _ = True
+findEventsDuration _ = 2000
+
+-- | Pick a suitable next beat from the database.
+pickNextBeat :: Database -> Name -> Maybe (Prob Name)
+pickNextBeat db name = do
+    beatit  <- Map.lookup name                      (beatIts  db) 
+    choices <- Map.lookup (destinationNotes beatit) (lexicons db) 
+    return $ case Set.toList choices of
+        [x] -> return x
+        xs  -> choose $ xs \\ [name, incfBeat name]
+            -- write an email concerning  incfBeat
+
+-- | Pick a triad beginning. May fail.
+--
+-- TODO: Fix this implementation to actually be random.
+pickTriadBeginning :: Database -> Prob (Maybe (Name,Mood))
+pickTriadBeginning db = return $ Just (name,mood)
+    where
+    name        = head (startBeats db)
+    Just beatit = Map.lookup name (beatIts db)
+    mood        = matchTonicMood $ take 4 $ events beatit
+
+matchTonicMood :: Notes -> Mood
+matchTonicMood _ = Major
+
 
