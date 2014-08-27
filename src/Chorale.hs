@@ -3,11 +3,8 @@
 ------------------------------------------------------------------------------}
 module Chorale where
 
-import Types
-import ReadCope
-
 import           Data.Char         (ord)
-import           Data.List         (sort, sortBy, inits, tails, intersperse)
+import           Data.List         (sort, sortBy, inits, tails, intersperse, (\\))
 import           Data.Maybe
 import           Data.Ord          (comparing)
 import qualified Data.Set   as Set
@@ -18,6 +15,12 @@ import           Data.Map          (Map)
 import System.IO
 import System.IO.Unsafe
 
+import Types
+import ReadCope
+
+{-----------------------------------------------------------------------------
+    Examples
+------------------------------------------------------------------------------}
 example     = unsafePerformIO $ fmap (snd . readCope) $ readFile "data/chopin-33-3.lisp"
 example2    = drop 10 $ take 20 $ example
 exampleBach = [("b206b",b206b)]
