@@ -4,6 +4,9 @@
 ------------------------------------------------------------------------------}
 module Types where
 
+import Control.Monad.Trans.State
+import System.Random
+
 type Time     = Rational
 type Pitch    = Int
 type Interval = Pitch
@@ -27,3 +30,18 @@ type Notes    = [Note]
 
 type Metadata = [(String,String)]
 type Score    = (Metadata, Notes)
+
+
+-- Monad for probabilistic computations.
+type Prob = State StdGen
+
+runProb :: Int -> Prob a -> [a]
+runProb seed m = fst $ runState (sequence $ repeat m) (mkStdGen seed)
+
+runProb1 :: Int -> Prob a -> a
+runProb1 seed m = fst $ runState m (mkStdGen seed)
+
+choose :: [a] -> Prob a
+choose xs = do
+    k <- state $ \s -> randomR (0,length xs-1) s
+    return (xs !! k)
