@@ -240,6 +240,11 @@ transpose d = map f
     where
     f x = if pitch x /= 0 then x { pitch = d + pitch x } else x
 
+
+-- | Remove all notes that start before or at an indicated time.
+clearTo :: Time -> Notes -> Notes
+clearTo t = filter ((t >=) . start)
+
 {-----------------------------------------------------------------------------
     Time utilities
 ------------------------------------------------------------------------------}

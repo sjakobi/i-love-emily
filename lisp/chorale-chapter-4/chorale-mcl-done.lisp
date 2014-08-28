@@ -550,6 +550,19 @@ GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
                   (append (list (first event))(list (+ (second event) amt))(nthcdr 2 event))
                   event)))
 
+;;;;;
+#| Calling (CLEAR-TO 3000 ((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96))) 
+ CLEAR-TO returned NIL|#
+;;;;;
+
+(defun CLEAR-TO (distance-to-cadence ordered-events)
+  "Clears the events up to the cadence."
+  (cond ((null  ordered-events)())
+        ((<= (very-first  ordered-events) distance-to-cadence)
+         (clear-to distance-to-cadence (rest ordered-events)))
+        (t (cons (first ordered-events)
+                 (clear-to distance-to-cadence (rest ordered-events))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Composition from a database
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
