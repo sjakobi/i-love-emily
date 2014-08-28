@@ -1,15 +1,22 @@
 module SPEACAnalysis where
 
 import Types (Note(..), Notes, Time)
+import SPEAC (bookExample)
 
 captureBeats :: Notes -> Time -> [Notes]
 captureBeats = undefined
   -- breakEventsIntoBeats
   -- collectBeats
 
+collectBeats :: Notes -> Time -> [Notes]
+collectBeats = undefined
+  -- collect-beat
+
+collectBeat :: Time -> Notes -> Notes
+collectBeat beat = takeWhile ((< beat) . start)
+
 breakEventsIntoBeats :: Time -> Notes -> Notes
-breakEventsIntoBeats = undefined
-  -- breakEvent
+breakEventsIntoBeats beat = concatMap (breakEvent beat)
 
 -- | Breaks the event if longer than a beat.
 -- >>> breakEvent 8000 $ Note {pitch = 57, start = 7000, duration = 1000, channel = 3}
