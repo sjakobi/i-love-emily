@@ -611,18 +611,6 @@ b43800b
         do (setf stuff (rest stuff))))
 
 ;;;;;
-#| Calling (get-channel 4 ((23000 48 500 4 96) (23000 64 1000 3 96) (23000 69 2000 2 96) (23000 72 1000 1 96) (23500 50 500 4 96) (24000 52 2000 4 96) (24000 64 2000 3 96) (24000 71 2000 1 96) (25000 68 1000 2 96))) 
- get-channel returned ((23000 48 500 4 96) (23500 50 500 4 96) (24000 52 2000 4 96))|#
-;;;;;
-
-(defun GET-CHANNEL (n music)
-  "Gets the nth channel of the music."
-  (cond ((null music)())
-        ((equal (fourth (first music)) n)
-         (cons (first music)(get-channel n (cdr music))))
-        (t (get-channel n (cdr music)))))
-
-;;;;;
 #| Calling (match-harmony (48 67 72 76) (60 64 67)) 
   match-harmony returned t|#
 ;;;;;
@@ -860,40 +848,6 @@ reset returned (((33000 52 500 4 96) (33000 64 500 3 96)  . . .|#
         (t ())))
 
 ;;;;;
-#| Calling (check-mt ((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96))) 
- check-mt returned nil|#
-;;;;;
-
-(defun CHECK-MT (events)
-  "Returns the major tonic."
-  (get-tonic events))
-
-;;;;;
-#|  Calling (get-tonic ((0 43 1000 4 96) (0 59 1000 3 96) (0 62 1000 2 96) (0 67 1000 1 96))) 
-  get-tonic returned nil|#
-;;;;;
-
-(defun GET-TONIC  (events)
-  "Returns the tonic."
-  (and (or (all (create-pitch-class-set (get-pitches events))
-                '(0 4 7))
-           (all (create-pitch-class-set (get-pitches events))
-                '(0 3 7)))
-       (zerop (first (create-pitch-class-set (get-pitches (get-channel 4 (sortcar #'< events))))))))
-
-;;;;;
-#|   Calling (all (2 7 11) (0 4 7)) 
-   all returned nil|#
-;;;;;
-
-(defun ALL (first second)
-  "Tests for presence of all of first arg in second arg."
-  (cond ((null first) t)
-        ((member (first first) second) 
-         (all (rest first) second))
-        (t ())))
-
-;;;;;
 #|Calling (ensure-necessary-cadences ((0 52 1000 4 96) (0 60 1000 3 96) . . .
  ensure-necessary-cadences returned ((0 52 1000 4 96) (0 60 1000 3 96) . . .|#
 ;;;;;
@@ -931,17 +885,3 @@ check-for-parallel returned t|#
                              (third (second sorted-pitches-by-beat))))
                   (minusp (- (fourth (first sorted-pitches-by-beat))
                              (fourth (second sorted-pitches-by-beat)))))))))
-
-;;;;;
-#|Calling (wait-for-cadence ((0 48 1000 4 96) (0 64 1000 3 96) (0 67 1000 2 96) (0 72 1000 1 96)  . . .
- wait-for-cadence returned t|#
-;;;;;
-
-(defun WAIT-FOR-CADENCE (events &optional (start-time (very-first events)))
-  "Ensures the cadence is the proper length."
-  (cond ((null events)())
-        ((> (very-first events) (+ start-time 4000))
-         t)
-        ((> (third (first events)) 1000) ())
-        (t (wait-for-cadence (rest events) start-time))))
-

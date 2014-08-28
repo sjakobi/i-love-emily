@@ -225,7 +225,11 @@ getOnsetNotes xs = map pitch $ filter ((start (head xs) ==) . start) xs
 getChannelNumbersFromEvents :: Notes -> [Int]
 getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel 
 
--- | Return all Notes that are not played on the indicated channel.
+-- | Return all Notes that are played on the indicated channel.
+getChannel :: Channel -> Notes -> Notes
+getChannel c = filter ((== c) . channel)
+
+-- | Return all Notes that are *not* played on the indicated channel.
 getOtherChannels :: Channel -> Notes -> Notes
 getOtherChannels c = filter ((/= c) . channel)
 
@@ -363,8 +367,17 @@ composeBach db = do
     -}
     
 reTime = id
-waitForCadence   _= True
 checkForParallel _ = False
+
+-- | Returns the major tonic.
+checkMT :: Notes -> Bool
+checkMT notes =
+    (isChord [0,4,7] || isChord [0,3,7]) && (firstNote `mod` 12 == 0)
+    where
+    pitches    = createPitchClassSet $ map pitch notes
+    isChord xs = pitches `Set.isSubsetOf` Set.fromList xs
+    firstNote  = head $ map pitch $ getChannel 4 $ sortByStart notes
+
 
 data Mood = Major | Minor
     deriving (Eq,Ord,Show,Read)
@@ -427,4 +440,18 @@ pickTriadBeginning db = return $ Just (name,mood)
 matchTonicMood :: Notes -> Mood
 matchTonicMood _ = Major
 
+{-----------------------------------------------------------------------------
+    Cadences
+------------------------------------------------------------------------------}
+-- | Ensure that the cadence has proper length.
+--
+-- TODO: Simplify
+waitForCadence :: Notes -> Bool
+waitForCadence xs = go (start $ head xs) xs
+    where
+    go _ []                  = False
+    go t (x:xs)
+        | start x > t + 4000 = True
+        | duration x > 1000  = False
+        | otherwise          = go t xs
 
