@@ -233,6 +233,13 @@ getChannel c = filter ((== c) . channel)
 getOtherChannels :: Channel -> Notes -> Notes
 getOtherChannels c = filter ((/= c) . channel)
 
+-- | Transpose all pitches by the specified interval.
+-- (Except for notes with pitch value @0@).
+transpose :: Interval -> Notes -> Notes
+transpose d = map f
+    where
+    f x = if pitch x /= 0 then x { pitch = d + pitch x } else x
+
 {-----------------------------------------------------------------------------
     Time utilities
 ------------------------------------------------------------------------------}
@@ -313,6 +320,11 @@ remainder note
             }]
     where
     beats = fromIntegral $ floor $ duration note / 1000
+
+-- | Given a time, return all events that start at this time and are on a full beat.
+-- Returns an empty list if the time is not on the beat.
+getOnBeat :: Time -> Notes -> Notes
+getOnBeat t xs = if thousandp t then takeWhile ((t ==) . start) xs else []
 
 {-----------------------------------------------------------------------------
     Composition
@@ -454,4 +466,9 @@ waitForCadence xs = go (start $ head xs) xs
         | start x > t + 4000 = True
         | duration x > 1000  = False
         | otherwise          = go t xs
+
+
+
+
+
 

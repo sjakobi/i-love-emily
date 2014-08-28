@@ -426,17 +426,6 @@ b43800b
          start-time)
         (t (find-2000s (rest ordered-events)))))
 
-;;;;;
-#|  Calling (TRANSPOSE 4 ((3000 61 1000 4 96) (3000 69 1000 3 96))) 
-  TRANSPOSE returned ((3000 65 1000 4 96) (3000 73 1000 3 96))|#
-;;;;;
-
-(defun TRANSPOSE (amt events)
-  "Transposes the events according to its first arg."
-  (loop for event in events
-        collect (if (not (zerop (second event)))
-                  (append (list (first event))(list (+ (second event) amt))(nthcdr 2 event))
-                  event)))
 
 ;;;;;
 #| Calling (GET-BEAT-LENGTH ((24000 59 1000 4 96) (24000 62 1000 3 96) (24000 67 1000 2 96) (24000 74 1000 1 96))) 
@@ -833,19 +822,6 @@ reset returned (((33000 52 500 4 96) (33000 64 500 3 96)  . . .|#
   "Resets the events for the delayed beat."
   (loop for event in (set-to-zero  events)
         collect (cons (+ begin-time (first event))(rest event))))
-
-;;;;;
-#|Calling (get-on-beat ((53000 46 1000 4 96) (53000 53 500 3 96) (53000 62 500 2 96) (53000 62 1000 1 96) (53500 52 250 3 96) (53500 55 500 2 96) (53750 50 250 3 96)) 53000) 
- get-on-beat returned ((53000 46 1000 4 96) (53000 53 500 3 96) (53000 62 500 2 96) (53000 62 1000 1 96))|#
-;;;;;
-
-(defun GET-ON-BEAT (events ontime)
-  "Returns the on beat from the events."
-  (cond ((null events) ()) 
-        ((and (thousandp (very-first events))(equal (very-first events) ontime))
-         (cons (first events)
-               (get-on-beat (rest events) ontime)))
-        (t ())))
 
 ;;;;;
 #|Calling (ensure-necessary-cadences ((0 52 1000 4 96) (0 60 1000 3 96) . . .
