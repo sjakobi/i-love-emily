@@ -1,4 +1,4 @@
-module SPEAC where
+module SPEAC.Tensions where
 
 import qualified Data.Array         as A
 import           Data.Function      (on)
@@ -11,8 +11,6 @@ import qualified Data.Vector        as V
 
 import           Types
 
-type Interval = Int   -- Interval represents the number of semi-tones
-                      -- in an interval
 type Tension = Double
 
 data Marked a = Unstarred a
@@ -391,10 +389,6 @@ getChordRoot =
 unmark :: Marked a -> a
 unmark (Unstarred x) = x
 unmark (Starred x) = x
-
--- | Returns the end of a note.
-end :: Note -> Time
-end n = start n + duration n
 
 -- | Determine the interval between two pitches.
 interval :: Pitch -> Pitch -> Interval

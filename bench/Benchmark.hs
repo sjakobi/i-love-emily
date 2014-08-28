@@ -1,6 +1,6 @@
 import Criterion.Main
 
-import SPEAC
+import SPEAC.Tensions
 
 main = defaultMain [
     bench "removeOctaves" $ nf removeOctaves [60, 67, 64, 72]

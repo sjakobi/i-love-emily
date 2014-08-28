@@ -17,7 +17,7 @@ import System.IO
 import System.IO.Unsafe
 
 import Types
-import ReadCope
+import IO.ReadCope
 
 {-----------------------------------------------------------------------------
     Examples
@@ -80,9 +80,9 @@ createBeatIts db (dbName,notes) = db2
     where
     -- Question: What about the last beat in the measure?
     (db2,_,_) = foldl step (db,1,True) $ zip beats (drop 1 beats ++ [[]])
-    
+
     beats = removeNils $ collectBeats $ setToZero $ sortByStart notes
-    
+
     step (db, counter, isStart) (beat1, beat2) = (newdb, counter+1, False)
         where
         name  = makeName dbName counter
@@ -94,12 +94,12 @@ createBeatIts db (dbName,notes) = db2
             , beatIts      = Map.insert name beatit (beatIts db)
             , lexicons     = Map.alter putBeatIntoLexicon startNotes (lexicons db)
             }
-        
+
         putBeatIntoLexicon Nothing    = Just (Set.singleton name)
         putBeatIntoLexicon (Just set)
             | name `Set.member` set   = Just set
             | otherwise               = Just (Set.insert name set)
-        
+
         beatit = BeatIt
             { startNotes       = startNotes
             , destinationNotes = destinationNotes
@@ -107,10 +107,10 @@ createBeatIts db (dbName,notes) = db2
             , voiceLeading     = voiceLeading
             , speac            = ()
             }
-        
+
         voiceLeading     = (getRules name startNotes destinationNotes
                            , name, start $ head $ sortByStart beat1)
-        
+
         startNotes       = getOnsetNotes beat1
         destinationNotes = getOnsetNotes beat2
 
@@ -150,7 +150,7 @@ getRules name xs ys = map mkVoiceLeading $ pairings $ zip xs ys
     mkVoiceLeading ((a,c),(b,d)) = VL
         { dyad     = reduceInterval (b - a)
         , moveLow  = c - a
-        , moveHigh = d - b 
+        , moveHigh = d - b
         , nameVL   = name
         }
 
@@ -168,7 +168,7 @@ pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
     Pitch utilities
 ------------------------------------------------------------------------------}
 -- | Reduce intervals that go beyond an octave.
--- 
+--
 -- Note that the information whether the interval is an upwards or downards
 -- motion is preserved. The result is an interval from -12 to 12.
 reduceInterval :: Interval -> Interval
@@ -178,7 +178,7 @@ reduceInterval x
     | otherwise   = reduceInterval (x-12)
 
 -- | Set of pitch classes in the given list of pitches.
--- 
+--
 -- A pitch class is the pitch modulo octaves. Middle C has pitch class 0.
 createPitchClassSet :: [Pitch] -> Set Pitch
 createPitchClassSet = Set.fromList . map (`mod` 12)
@@ -208,7 +208,7 @@ isThird x = x == 3 || x == 4
 ------------------------------------------------------------------------------}
 -- | Adjust starting times so that the first note starts at zero.
 setToZero :: Notes -> Notes
-setToZero xs = [ x { start = start x - diff } | x <- xs ] 
+setToZero xs = [ x { start = start x - diff } | x <- xs ]
     where
     diff = start $ head xs
 
@@ -223,7 +223,7 @@ getOnsetNotes xs = map pitch $ filter ((start (head xs) ==) . start) xs
 
 -- | Collect all channel numbers that occur in the notes
 getChannelNumbersFromEvents :: Notes -> [Int]
-getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel 
+getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel
 
 -- | Return all Notes that are not played on the indicated channel.
 getOtherChannels :: Channel -> Notes -> Notes
@@ -239,7 +239,7 @@ firstPlaceWhereAllTogether :: Notes -> Time
 firstPlaceWhereAllTogether notes = allTogether orderedTimingsByChannel
     where
     endingTimes = plotTimings notes
-    orderedTimingsByChannel = 
+    orderedTimingsByChannel =
         [ collectTimingsByChannel endingTimes c
         | c <- getChannelNumbersFromEvents notes]
 
@@ -280,7 +280,7 @@ plotTimings xs = [(channel x, end x) | x <- xs]
 
 -- | Collect the ending times by the indicated channel
 collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
-collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ] 
+collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ]
 
 
 -- | Remove all notes that beign within a beat from the first note.
@@ -296,7 +296,7 @@ removeFullBeat xs = drop segment xs
     where
     segment = length $ takeWhile (< 1000) $ scanl (+) 0 $ map duration xs
 
--- | Take the last part of the note that lasts only a fraction of a beat. 
+-- | Take the last part of the note that lasts only a fraction of a beat.
 --
 -- >>> remainder $ note 76000 41 1500 4
 -- [Note {pitch = 41, start = 77000 % 1, duration = 500 % 1, channel = 4}]
@@ -337,7 +337,7 @@ composeBach db = do
         notes = reTime $ concat $ map events
               $ catMaybes [Map.lookup name (beatIts db) | name <- names]
         lastNote = last notes
-        
+
         continue
             = isNothing mbeats
             -- TODO: Include this condition later
@@ -346,7 +346,7 @@ composeBach db = do
             || not (waitForCadence notes)
             || checkForParallel notes
 
-    if continue 
+    if continue
         then composeBach db
         else return $ finish notes
 
@@ -361,7 +361,7 @@ composeBach db = do
         then notes
         else delayForUpbeat notes
     -}
-    
+
 reTime = id
 waitForCadence   _= True
 checkForParallel _ = False
@@ -393,11 +393,11 @@ composeMaybePiece db = do
                                 name'   <- pname'
                                 mresult <- loop (counter+1) name'
                                 return $ fmap (name:) mresult
-                    
+
                     where
                     Just beatit = Map.lookup name (beatIts db)
                     notes       = events beatit
-            
+
             return . fmap (++ [name]) =<< loop 0 name
 
 matchTonicMinor _ = True
@@ -407,8 +407,8 @@ findEventsDuration _ = 2000
 -- | Pick a suitable next beat from the database.
 pickNextBeat :: Database -> Name -> Maybe (Prob Name)
 pickNextBeat db name = do
-    beatit  <- Map.lookup name                      (beatIts  db) 
-    choices <- Map.lookup (destinationNotes beatit) (lexicons db) 
+    beatit  <- Map.lookup name                      (beatIts  db)
+    choices <- Map.lookup (destinationNotes beatit) (lexicons db)
     return $ case Set.toList choices of
         [x] -> return x
         xs  -> choose $ xs \\ [name, incfBeat name]

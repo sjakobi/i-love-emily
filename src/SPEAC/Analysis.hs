@@ -1,7 +1,7 @@
-module SPEACAnalysis where
+module SPEAC.Analysis where
 
 import Types (Note(..), Notes, Time)
-import SPEAC (bookExample)
+import SPEAC.Tensions (bookExample)
 
 captureBeats :: Notes -> Time -> [Notes]
 captureBeats = undefined
