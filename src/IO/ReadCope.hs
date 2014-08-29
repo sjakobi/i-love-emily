@@ -2,7 +2,7 @@
     Load MIDI files that have been converted to LISP format by David Cope.
     Very sloppy, but works.
 ------------------------------------------------------------------------------}
-module ReadCope where
+module IO.ReadCope where
 
 import Types
 

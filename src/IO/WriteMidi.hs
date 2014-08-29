@@ -1,7 +1,7 @@
 {-----------------------------------------------------------------------------
     Write Score as a midi file
 ------------------------------------------------------------------------------}
-module WriteMidi where
+module IO.WriteMidi where
 
 import Data.List
 import Data.Function (on)
@@ -22,19 +22,19 @@ toMidi (_,notes) = Midi
     where
     velocity = 80
     timeDiv  = TicksPerBeat 1000
-    
+
     unzipChannels notes = filter (not . null) $
         [filter ((ch ==) . channel) notes | ch <- [1..10]]
 
     toMessages :: Notes -> Track Ticks
     toMessages = fromAbsTime . sortBy (compare `on` fst) . concatMap toMessagePair
-    
+
     toMessagePair :: Note -> Track Ticks
     toMessagePair n =
         [ (toTicks $ start n, NoteOn (channel n) (pitch n) velocity)
         , (toTicks $ start n + duration n, NoteOff (channel n) (pitch n) 0)
         ]
-    
+
     toTicks x = floor x
 
 -- | Example export
