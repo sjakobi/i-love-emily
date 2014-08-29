@@ -5,11 +5,18 @@
 module Types where
 
 import Control.Monad.Trans.State
+import Data.List                 (sortBy, tails)
+import Data.Ord                  (comparing)
 import System.Random
 
 type Time     = Rational
 type Pitch    = Int
 type Interval = Pitch
+
+-- | Determine the interval between two pitches.
+interval :: Pitch -> Pitch -> Interval
+interval a b = abs (a - b) `rem` 12
+
 type Channel  = Int
 
 data Note = Note
@@ -28,9 +35,13 @@ end x = start x + duration x
 
 type Notes    = [Note]
 
+-- | Sort notes chronologically
+sortByStart :: Notes -> Notes
+sortByStart = sortBy (comparing start)
+
+
 type Metadata = [(String,String)]
 type Score    = (Metadata, Notes)
-
 
 -- Monad for probabilistic computations.
 type Prob = State StdGen

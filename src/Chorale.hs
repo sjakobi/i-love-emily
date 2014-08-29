@@ -212,10 +212,6 @@ setToZero xs = [ x { start = start x - diff } | x <- xs ]
     where
     diff = start $ head xs
 
--- | Sort notes by starting times
-sortByStart :: Notes -> Notes
-sortByStart = sortBy (comparing start)
-
 -- | Get the pitches of the notes that start simultaneously
 -- with the first note.
 getOnsetNotes :: Notes -> [Pitch]

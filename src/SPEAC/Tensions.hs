@@ -9,8 +9,7 @@ import           Data.Maybe         (fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
-import           Internal.Utils     (interval, pairings, sortByStart, spanPlus,
-                                     takeUntilEmpty, (.:))
+import           Internal.Utils     (pairings, spanPlus, takeUntilEmpty, (.:))
 import           Types
 
 type Tension = Double
