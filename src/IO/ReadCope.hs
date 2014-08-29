@@ -4,6 +4,10 @@
 ------------------------------------------------------------------------------}
 module IO.ReadCope where
 
+import Control.Applicative
+import Data.Char
+import Text.ParserCombinators.ReadP
+
 import Internal.Utils
 import Types
 
@@ -27,3 +31,42 @@ readNote ['(':a,b,c,d,e] = Note
     , channel  = read d
     }
 
+{-----------------------------------------------------------------------------
+    Parser combinators
+------------------------------------------------------------------------------}
+readBach :: String -> [(String, Notes)]
+readBach = fst . head . readP_to_S (manyTill parseBachPiece eof)
+
+lexeme p  = skipComments *> p <* skipComments
+symbol    = lexeme . string
+
+skipComment = () <$ string "#|" <* manyTill get (string "|#")
+skipComments = do
+    s <- look
+    case s of
+        (';':_)             -> manyTill get (char '\n') >> skipComments
+        ('#':_)             -> skipComment >> skipComments
+        (c  :_) | isSpace c -> skipSpaces  >> skipComments
+        _                   -> return ()
+
+parseBachPiece :: ReadP (String, Notes)
+parseBachPiece = do
+    symbol "("
+    symbol "setq"
+    name  <- lexeme $ munch1 isAlphaNum
+    symbol "'("
+    notes <- manyTill parseNote $ symbol ")"
+    symbol ")"
+    return (name, notes)
+
+parseNote :: ReadP Note
+parseNote =
+    symbol "(" *> (makeNote <$> int <*> int <*> int <*> int <*> int) <* symbol ")"    
+    where
+    int = lexeme $ fmap read $ munch1 isDigit
+    makeNote a b c d _ = Note
+        { pitch    = b
+        , start    = fromIntegral $ a
+        , duration = fromIntegral $ c
+        , channel  = d
+        }

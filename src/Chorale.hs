@@ -28,9 +28,7 @@ exampleBach = [("b206b",b206b)]
     where
     b206b = unsafePerformIO $ fmap (readLispNotes . lines) $ readFile "data/b206b.lisp"
 
-bachChoralesInDatabases :: [(String, Notes)]
-bachChoralesInDatabases = []
-    -- [("b206b", b206b), ...]
+exampleDB   = unsafePerformIO $ fmap readBach $ readFile "data/jsb1.lisp"
 
 {-----------------------------------------------------------------------------
     Database
