@@ -534,6 +534,95 @@ GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
     () (cons (- (second set)(first set))
              (get-interval (rest set)))))
 
+;;;;;
+#| Calling (MATCH-THEM (48 64 67 72) (24 36 48 60 72 84 96 108 120 132 28 40 52 64 76 88 100 112 124 31 43 55 67 79 91 103 115 127) 1) 
+ MATCH-THEM returned T|#
+;;;;;
+
+(defun MATCH-THEM (chord full-chord allowance)
+  "Matches the chord with the list of pitches within the allowance."
+  (cond ((null chord) t)
+        ((and (not (member (first chord) full-chord))
+              (zerop allowance))
+         ())
+        ((not (member (first chord) full-chord))
+         (match-them (rest chord) full-chord (1- allowance)))
+        (t (match-them (rest chord) full-chord allowance))))
+
+;;;;;
+#| Calling (match-harmony (48 67 72 76) (60 64 67)) 
+  match-harmony returned t|#
+;;;;;
+
+(defun MATCH-HARMONY (one two)
+  "Checks to see if its args match mod-12."
+  (match-them (my-sort #'< one)
+              (apply #'append 
+                     (loop for note in two
+                           collect (project-octaves note)))
+              (floor (/ (length one) 4))))
+
+;;;;;
+#| Calling (project-octaves 60) 
+ project-octaves returned (24 36 48 60 72 84 96 108 120 132)|#
+;;;;;
+
+(defun PROJECT-OCTAVES (note)
+  "Projects its arg through a series of octaves."
+  (let ((base-note (reduce-it note 20)))
+    (loop until (> base-note 120)
+          collect (setf base-note (+ base-note 12)))))
+
+;;;;;
+#|  Calling (reduce-it 60 20) 
+  reduce-it returned 12|#
+;;;;;
+
+(defun REDUCE-IT (note base)
+  "Reduces its first arg mod12 below its second arg."
+  (if (< note base) note (reduce-it (- note 12) base)))
+
+;;;;;
+#| Calling (all-members (48 67 72 76) (24 36 48 60 72 84 96 108 120 132 28 40 52 64 76 88 100 112 124 31 43 55 67 79 91 103 115 127)) 
+ all-members returned t|#
+;;;;;
+
+(defun ALL-MEMBERS (list target)
+  "Checks to see if its first arg members are present in second arg."
+  (cond ((null list) t)
+        ((not (member (first list) target)) ())
+        (t (all-members (rest list) target))))
+
+;;;;;
+#| Calling (match-tonic-minor ((5000 55 1000 4 96) (5000 67 1000 3 96) (5000 62 1000 2 96) (5000 71 1000 1 96))) 
+ match-tonic-minor returned nil|#
+;;;;;
+
+(defun MATCH-TONIC-MINOR (the-events)
+  "Matches minor tonics."
+  (let ((events (get-last-beat-events (break-into-beats the-events))))
+    (and (not (null events))
+         (and (all-members (mapcar #'second events) (apply #'append 
+                                                           (loop for note in '(60 63 67)
+                                                                 collect (project-octaves note))))
+              (match-harmony (my-sort #'< (mapcar #'second events)) '(60 63 67))
+              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 63 67))))))
+
+;;;;;
+#| Calling (match-bach-tonic ((56000 62 1000 4 96) (56000 67 1000 3 96) (56000 74 500 2 96) (56000 81 2000 1 96) (56500 72 250 2 96) (56750 71 250 2 96) (57000 50 1000 4 96) (57000 66 1000 3 96) (57000 72 1000 2 96))) 
+ match-bach-tonic returned nil|#
+;;;;;
+
+(defun MATCH-BACH-TONIC (the-events)
+  "Returns true if the events are tonic."
+  (let ((events (get-last-beat-events (break-into-beats the-events))))
+    (and (not (null events))
+         (and (all-members (mapcar #'second events) (apply #'append 
+                                                           (loop for note in '(60 64 67)
+                                                                 collect (project-octaves note))))
+              (match-harmony (my-sort #'< (mapcar #'second events)) '(60 64 67))
+              (match-harmony (my-sort #'> (mapcar #'second events)) '(60 64 67))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Note utilities
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -562,6 +651,33 @@ GET-CHANNEL-NUMBERS-FROM-EVENTS returned (1 2 3 4)|#
          (clear-to distance-to-cadence (rest ordered-events)))
         (t (cons (first ordered-events)
                  (clear-to distance-to-cadence (rest ordered-events))))))
+
+;;;;;
+#| Calling (get-last-beat-events ((18000 48 1000 4 96) (18000 64 1000 3 96) (18000 67 1000 2 96) (18000 72 1000 1 96))) 
+ get-last-beat-events returned ((18000 48 1000 4 96) (18000 64 1000 3 96) (18000 67 1000 2 96) (18000 72 1000 1 96))|#
+;;;;;
+
+(defun GET-LAST-BEAT-EVENTS (events)
+  "As its name suggests."
+  (let* ((begin-time (first (my-last (sortcar #'< events))))
+         (last-beat (get-all-events-with-start-time-of begin-time events)))
+    (if (and (equal (length last-beat) 4)
+             (thousandp (third (first last-beat))))
+      last-beat)))
+
+;;;;;
+#|  Calling (get-all-events-with-start-time-of 18000 ((18000 48 1000 4 96) (18000 64 1000 3 96) (18000 67 1000 2 96) (18000 72 1000 1 96))) 
+  get-all-events-with-start-time-of returned ((18000 48 1000 4 96) (18000 64 1000 3 96) (18000 67 1000 2 96) (18000 72 1000 1 96))|#
+;;;;;
+
+(defun GET-ALL-EVENTS-WITH-START-TIME-OF (start-time events)
+  "As its name suggests."
+  (cond ((null events)())
+        ((equal (very-first events) start-time)
+         (cons (first events)
+               (get-all-events-with-start-time-of start-time (rest events))))
+        (t (get-all-events-with-start-time-of start-time (rest events)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Composition from a database

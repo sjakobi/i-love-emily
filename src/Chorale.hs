@@ -201,6 +201,13 @@ inversions xs = init $ zipWith (\x y -> y ++ map (+12) x) (inits xs) (tails xs)
 isThird :: Interval -> Bool
 isThird x = x == 3 || x == 4
 
+-- | Check whether the pitch classes of the first argument
+-- form a subset of the pitch classes in the second argument.
+harmonicSubset :: [Pitch] -> [Pitch] -> Bool
+harmonicSubset xs ys =
+    createPitchClassSet xs `Set.isSubsetOf` createPitchClassSet ys
+
+
 {-----------------------------------------------------------------------------
     Note Utilities
 ------------------------------------------------------------------------------}
@@ -233,7 +240,6 @@ transpose :: Interval -> Notes -> Notes
 transpose d = map f
     where
     f x = if pitch x /= 0 then x { pitch = d + pitch x } else x
-
 
 -- | Remove all notes that start before or at an indicated time.
 clearTo :: Time -> Notes -> Notes
@@ -382,11 +388,11 @@ checkForParallel _ = False
 
 -- | Returns the major tonic.
 checkMT :: Notes -> Bool
-checkMT notes =
-    (isChord [0,4,7] || isChord [0,3,7]) && (firstNote `mod` 12 == 0)
+checkMT notes
+        =  (harmonicSubset pitches [0,4,7] || harmonicSubset pitches [0,3,7])
+        && (firstNote `mod` 12 == 0)
     where
-    pitches    = createPitchClassSet $ map pitch notes
-    isChord xs = pitches `Set.isSubsetOf` Set.fromList xs
+    pitches    = map pitch notes
     firstNote  = head $ map pitch $ getChannel 4 $ sortByStart notes
 
 
@@ -405,7 +411,7 @@ composeMaybePiece db = do
                 loop :: Int -> Name -> Prob (Maybe [Name])
                 loop counter name
                     | null (destinationNotes beatit)     = return Nothing
-                    | counter > 5 -- 36
+                    | counter > 36
                       && findEventsDuration notes > 1000
                       && (if mood == Minor
                             then matchTonicMinor notes
@@ -424,8 +430,6 @@ composeMaybePiece db = do
 
             return . fmap (++ [name]) =<< loop 0 name
 
-matchTonicMinor _ = True
-matchBachTonic  _ = True
 findEventsDuration _ = 2000
 
 -- | Pick a suitable next beat from the database.
@@ -446,10 +450,31 @@ pickTriadBeginning db = return $ Just (name,mood)
     where
     name        = head (startBeats db)
     Just beatit = Map.lookup name (beatIts db)
-    mood        = matchTonicMood $ take 4 $ events beatit
+    mood        = if matchTonicMinor $ take 4 $ events beatit then Minor else Major
 
-matchTonicMood :: Notes -> Mood
-matchTonicMood _ = Major
+-- | Check whether the notes form a C minor tonic.
+matchTonicMinor :: Notes -> Bool
+matchTonicMinor notes = not (null chord) && harmonicSubset chord [60,63,67]
+    where
+    chord = map pitch $ getLastBeatEvents $ breakIntoBeats notes
+
+-- | Check whether the notes form a C major tonic.
+matchBachTonic :: Notes -> Bool
+matchBachTonic notes = not (null chord) && harmonicSubset chord [60,64,67]
+    where
+    chord = map pitch $ getLastBeatEvents $ breakIntoBeats notes
+
+-- | Retrieve the last four events if the first of them has a duration
+-- that is a multiple of 1000. Return an empty list otherwise.
+getLastBeatEvents :: Notes -> Notes
+getLastBeatEvents notes
+    | length lastBeat == 4 && thousandp (duration $ head lastBeat) = lastBeat
+    | otherwise                                                    = []
+    where
+    beginTime = start $ last $ sortByStart notes
+    lastBeat  = filter ((beginTime ==) . start) notes
+
+breakIntoBeats    = id
 
 {-----------------------------------------------------------------------------
     Cadences
