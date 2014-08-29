@@ -4,6 +4,7 @@
 ------------------------------------------------------------------------------}
 module IO.ReadCope where
 
+import Internal.Utils
 import Types
 
 -- | Read a score file with metadata at the top.
@@ -26,9 +27,3 @@ readNote ['(':a,b,c,d,e] = Note
     , channel  = read d
     }
 
-
-chunk :: Int -> [a] -> [[a]]
-chunk n [] = []
-chunk n xs = ys : chunk n zs
-    where
-    (ys,zs) = splitAt n xs
