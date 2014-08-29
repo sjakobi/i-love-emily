@@ -299,7 +299,7 @@ collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
 collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ]
 
 
--- | Remove all notes that beign within a beat from the first note.
+-- | Remove all notes that begin within a beat from the first note.
 --
 -- Note: This function adds up all durations and assumes that the
 -- events are consecutive. In particular, it only makes sense when
@@ -330,6 +330,65 @@ remainder note
 -- Returns an empty list if the time is not on the beat.
 getOnBeat :: Time -> Notes -> Notes
 getOnBeat t xs = if thousandp t then takeWhile ((t ==) . start) xs else []
+
+-- | Break notes into beat-sized groupings.
+-- Each note may be split into several parts with duration 1000 each.
+--
+-- >>> breakIntoBeats [note 20000 48 2000 4, note 20000 55 2000 3, note 20000 64 2000 2, note 20000 72 2000 1] 
+-- [Note {pitch = 48, start = 20000 % 1, duration = 1000 % 1, channel = 4},Note {pitch = 55, start = 20000 % 1, duration = 1000 % 1, channel = 3},Note {pitch = 64, start = 20000 % 1, duration = 1000 % 1, channel = 2},Note {pitch = 72, start = 20000 % 1, duration = 1000 % 1, channel = 1},
+--  Note {pitch = 48, start = 21000 % 1, duration = 1000 % 1, channel = 4},Note {pitch = 55, start = 21000 % 1, duration = 1000 % 1, channel = 3},Note {pitch = 64, start = 21000 % 1, duration = 1000 % 1, channel = 2},Note {pitch = 72, start = 21000 % 1, duration = 1000 % 1, channel = 1}]
+breakIntoBeats :: Notes -> Notes
+breakIntoBeats = sortByStart . concat . chopIntoBites . sortByStart
+
+chopIntoBites :: Notes -> [Notes]
+chopIntoBites [] = []
+chopIntoBites (x:xs)
+    | thousandp (start x) && duration x == 1000 = [x] : chopIntoBites xs
+    | duration x > 1000  = chop x : chopIntoBites (remainder x ++ xs)
+    | otherwise          = getFullBeat (getChannel c (x:xs))
+                         : chopIntoBites (rest ++ getOtherChannels c xs)
+    where
+    c = channel x
+    beat = getFullBeat $ getChannel c $ x:xs
+    rest = remainders $ removeFullBeat $ getChannel c $ x:xs
+
+-- | Chop a note into beat-sized pieces, discarding any remainders.
+--
+-- >>> chop $ note 20000 48 2000 4
+-- [Note {pitch = 48, start = 20000 % 1, duration = 1000 % 1, channel = 4},Note {pitch = 48, start = 21000 % 1, duration = 1000 % 1, channel = 4}]
+chop :: Note -> [Note]
+chop note
+    | duration note < 1000 = []
+    | otherwise            =
+        note { duration = 1000 }
+            : chop (note { start = start note + 1000, duration = dur - 1000})
+    where
+    dur = duration note
+
+-- | Get a full beat of the music.
+--
+-- Assumes that the notes are consecutive and the first note starts on the beat.
+getFullBeat :: Notes -> Notes
+getFullBeat xs = go 0 xs
+    where
+    go dur []     = []
+    go dur (x:xs)
+        | dur + duration x == 1000 = [x]
+        | dur + duration x >  1000 = [x { duration = 1000 - dur }]
+        | otherwise                = x : go (dur + duration x) xs
+    -- dur keeps track of how far we are already into the beat
+
+-- | Returns remainders of beats, i.e. what 'getFullBeat' leaves over.
+--
+-- Assumes that the notes are consecutive and the first note starts on the beat.
+remainders :: Notes -> Notes
+remainders xs = go (start $ head xs) 0 xs
+    where
+    go beginTime dur []     = []
+    go beginTime dur (x:xs)
+        | dur + duration x == 1000 = []
+        | dur + duration x >  1000 = [x { start = beginTime + 1000 - dur, duration = duration x - (1000 - dur) }]
+        | otherwise                = go (beginTime + duration x) (dur + duration x) xs  
 
 {-----------------------------------------------------------------------------
     Composition
@@ -473,8 +532,6 @@ getLastBeatEvents notes
     where
     beginTime = start $ last $ sortByStart notes
     lastBeat  = filter ((beginTime ==) . start) notes
-
-breakIntoBeats    = id
 
 {-----------------------------------------------------------------------------
     Cadences
