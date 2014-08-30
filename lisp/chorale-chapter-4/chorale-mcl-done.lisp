@@ -1260,6 +1260,18 @@ check-for-parallel returned t|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;
+#| Calling (find-events-duration ((53000 52 500 4 96) (53000 67 500 3 96) (53000 76 1000 2 96) (53000 84 1000 1 96) (53500 54 500 4 96) (53500 69 500 3 96))) 
+ find-events-duration returned 1000|#
+;;;;;
+
+(defun FIND-EVENTS-DURATION (events &optional (duration 0))
+  "Returns the events duration."
+  (cond ((null events) duration)
+        ((equal (fourth (first events)) 1)
+         (find-events-duration (rest events) (+ duration (third (first events)))))
+        (t (find-events-duration (rest events) duration))))
+
+;;;;;
 #|   Calling (reset (((34000 52 500 4 96) (34000 64 500 3 96) (34000 67 500 2 96) (34000 72 1000 1 96) . . .
 reset returned (((33000 52 500 4 96) (33000 64 500 3 96)  . . .|#
 ;;;;;

@@ -515,6 +515,8 @@ composeMaybePiece db = do
         Nothing   -> return Nothing
         Just (name, mood) -> do
             let
+                findEventsDuration = totalDuration . getChannel 1
+            
                 loop :: Int -> Name -> Prob (Maybe [Name])
                 loop counter name
                     | null (destinationNotes beatit)     = return Nothing
@@ -536,8 +538,6 @@ composeMaybePiece db = do
                     notes       = events beatit
 
             loop 0 name
-
-findEventsDuration _ = 2000
 
 -- | Pick a suitable next beat from the database.
 pickNextBeat :: Database -> Name -> Maybe (Prob Name)
