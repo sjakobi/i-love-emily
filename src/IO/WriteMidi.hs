@@ -1,7 +1,7 @@
 {-----------------------------------------------------------------------------
     Write Score as a midi file
 ------------------------------------------------------------------------------}
-module IO.WriteMidi where
+module IO.WriteMidi (toMidi, exportFile) where
 
 import Data.List
 import Data.Function (on)
@@ -9,7 +9,7 @@ import Data.Function (on)
 import Codec.Midi hiding (channel)
 
 import Types
-import ReadCope
+import IO.ReadCope
 
 -- | Export a score to midi format.
 -- (We currently assume that time is measured in 1000 per beat.)

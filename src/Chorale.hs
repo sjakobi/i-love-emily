@@ -19,6 +19,7 @@ import System.IO.Unsafe
 import Types
 import Internal.Utils
 import IO.ReadCope
+import IO.WriteMidi
 
 {-----------------------------------------------------------------------------
     Examples
@@ -29,7 +30,13 @@ exampleBach = [("b206b",b206b)]
     where
     b206b = unsafePerformIO $ fmap (readLispNotes . lines) $ readFile "data/b206b.lisp"
 
-exampleDB   = unsafePerformIO $ fmap readBach $ readFile "data/jsb1.lisp"
+exampleDB = unsafePerformIO $ fmap readBach $ readFile "data/jsb1.lisp"
+bach      = createCompleteDatabase exampleDB
+
+mkPiece seed = runProb1 seed $ composeBach $ bach
+-- mkPiece 3 needs to fix cadences
+
+saveFile notes = exportFile "test.mid" $ toMidi (undefined, notes)
 
 {-----------------------------------------------------------------------------
     Database
@@ -202,12 +209,6 @@ harmonicSubset xs ys =
 {-----------------------------------------------------------------------------
     Note Utilities
 ------------------------------------------------------------------------------}
--- | Adjust starting times so that the first note starts at zero.
-setToZero :: Notes -> Notes
-setToZero xs = [ x { start = start x - diff } | x <- xs ]
-    where
-    diff = start $ head xs
-
 -- | Get the pitches of the notes that start simultaneously
 -- with the first note.
 getOnsetNotes :: Notes -> Notes
@@ -301,6 +302,19 @@ plotTimings xs = [(channel x, end x) | x <- xs]
 collectTimingsByChannel :: [Timing] -> Channel -> [Timing]
 collectTimingsByChannel xs c = [x | x@(c',_) <- xs, c == c' ]
 
+
+-- | Adjust starting times so that the first note starts at zero.
+setToZero :: Notes -> Notes
+setToZero xs = [ x { start = start x - diff } | x <- xs ]
+    where
+    diff = start $ head xs
+
+-- | Total duration of a piece of music.
+totalDuration :: Notes -> Time
+totalDuration notes = last - first
+    where
+    last  = maximum . map end   $ notes
+    first = minimum . map start $ notes
 
 -- | Remove all notes that begin within a beat from the first note.
 --
@@ -422,14 +436,13 @@ composeBach db = do
     mbeats <- composeMaybePiece db
     let
         Just names = mbeats
-        notes = reTime $ concat $ map events
+        notes = concat $ reTime $ map events
               $ catMaybes [Map.lookup name (beatIts db) | name <- names]
         lastNote = last notes
 
         continue
             = isNothing mbeats
-            -- TODO: Include this condition later
-            -- || end lastNote <  15000
+            || end lastNote <  15000
             || end lastNote > 200000
             || not (waitForCadence notes)
             || checkForParallel notes
@@ -439,7 +452,7 @@ composeBach db = do
         else return $ finish notes
 
     where
-    finish = id -- ensureNecessaryCadences
+    finish = ensureNecessaryCadences
     {- TODO: add this later
     finish = cadenceCollapse . transposeToBachRange
            . fixUpBeat . ensureNecessaryCadences
@@ -450,7 +463,16 @@ composeBach db = do
         else delayForUpbeat notes
     -}
 
-reTime = id
+-- | Retime a sequence of beats to fit together.
+reTime :: [Notes] -> [Notes]
+reTime = go 0
+    where
+    go currentTime []     = []
+    go currentTime (x:xs) = map shift (setToZero x)
+                          : go (currentTime + totalDuration x) xs
+        where
+        shift note = note { start = start note + currentTime }
+
 checkForParallel _ = False
 
 -- | Returns the major tonic.

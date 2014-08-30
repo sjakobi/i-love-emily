@@ -50,18 +50,6 @@
         (t ())))
 
 ;;;;;
-#| Calling (GET-BEAT-LENGTH ((24000 59 1000 4 96) (24000 62 1000 3 96) (24000 67 1000 2 96) (24000 74 1000 1 96))) 
- GET-BEAT-LENGTH returned 1000|#
-;;;;;
-
-(defun GET-BEAT-LENGTH (events)
-  "this is used in re-time for setting the new time!
-   requires that the first in events be sorted to current time!"
-  (let ((time (very-first events)))
-    (first (my-sort #'> (loop for event in events
-                              collect (get-note-timing event time))))))
-
-;;;;;
 #|  Calling (GET-NOTE-TIMING (24000 59 1000 4 96) 24000) 
   GET-NOTE-TIMING returned 1000|#
 ;;;;;
@@ -91,20 +79,6 @@
         ((equal (fourth (first events)) 1)
          (find-events-duration (rest events) (+ duration (third (first events)))))
         (t (find-events-duration (rest events) duration))))
-
-;;;;;
-#|Calling (re-time (((15000 60 1000 4 96) (15000 64 1000 3 96) . . .
-re-time returned (((0 60 1000 4 96) (0 64 1000 3 96) . . .|#
-;;;;;
-
-(defun RE-TIME (event-lists &optional (current-time 0))
-  "Re-times the beats to fit together."
-  (if (null event-lists)()
-      (cons (loop for event in (set-to-zero (first event-lists))
-                  collect (cons (+ (first event) current-time) (rest event)))
-            (re-time (rest event-lists) (+ current-time 
-                                           (get-beat-length 
-                                            (first event-lists)))))))
 
 ;;;;;
 #| Calling (transpose-to-bach-range ((0 60 1000 4 96) (0 64 1000 3 96)  . . .
