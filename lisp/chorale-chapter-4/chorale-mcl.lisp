@@ -879,7 +879,7 @@ T|#
 ;;;;;
 
 (defun GET-LONG-PHRASES (distances)
-  "Returns phrases of greater than 120000 duration."
+  "Returns phrases of greater than 12000 duration."
   (cond ((null (rest distances))())
         ((> (- (second distances)(first distances)) 12000)
          (cons (firstn 2 distances)

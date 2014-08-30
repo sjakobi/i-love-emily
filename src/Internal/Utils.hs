@@ -1,6 +1,7 @@
 module Internal.Utils where
 
-import Data.List (tails)
+import Data.List (tails, minimumBy)
+import Data.Ord
 
 -- | Return all ways to choose two elements of the list.
 -- In the result pairs, the first component always comes earlier in the list
@@ -21,6 +22,9 @@ chunk n xs = ys : chunk n zs
     where
     (ys,zs) = splitAt n xs
 
+-- | Find the list element that is closest to the given element.
+findClosest :: (Ord a, Num a) => a -> [a] -> a
+findClosest x ys = snd $ minimumBy (comparing fst) [(abs (x-y), y) | y <- ys]
 
 -- | @'spanPlus' p xs@ returns a tuple where the first element is the
 -- longest prefix of @xs@ that satisfies @p@ plus the first element of the

@@ -17,6 +17,7 @@ import System.IO
 import System.IO.Unsafe
 
 import Types
+import Internal.Utils
 import IO.ReadCope
 
 {-----------------------------------------------------------------------------
@@ -109,8 +110,8 @@ createBeatIts db (dbName,notes) = db2
         voiceLeading     = (getRules name startNotes destinationNotes
                            , name, start $ head $ sortByStart beat1)
 
-        startNotes       = getOnsetNotes beat1
-        destinationNotes = getOnsetNotes beat2
+        startNotes       = map pitch $ getOnsetNotes beat1
+        destinationNotes = map pitch $ getOnsetNotes beat2
 
 removeNils = filter (not . null)
 
@@ -151,16 +152,6 @@ getRules name xs ys = map mkVoiceLeading $ pairings $ zip xs ys
         , moveHigh = d - b
         , nameVL   = name
         }
-
--- | Return all ways to choose two elements of the list.
--- In the result pairs, the first component always comes earlier in the list
--- than the second.
---
--- >>> pairings [1..4]
--- [(1,2),(1,3),(1,4),(2,3),(2,4),(3,4)]
-pairings :: [a] -> [(a,a)]
-pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
-
 
 {-----------------------------------------------------------------------------
     Pitch utilities
@@ -219,8 +210,8 @@ setToZero xs = [ x { start = start x - diff } | x <- xs ]
 
 -- | Get the pitches of the notes that start simultaneously
 -- with the first note.
-getOnsetNotes :: Notes -> [Pitch]
-getOnsetNotes xs = map pitch $ filter ((start (head xs) ==) . start) xs
+getOnsetNotes :: Notes -> Notes
+getOnsetNotes xs = filter ((start (head xs) ==) . start) xs
 
 -- | Collect all channel numbers that occur in the notes
 getChannelNumbersFromEvents :: Notes -> [Int]
@@ -243,7 +234,19 @@ transpose d = map f
 
 -- | Remove all notes that start before or at an indicated time.
 clearTo :: Time -> Notes -> Notes
-clearTo t = filter ((t >=) . start)
+clearTo t = filter (not . (<= t) . start)
+
+-- | Get all notes that /start/ within a specified time interval.
+-- The interval is half-open, i.e. @[t1,t2)@.
+getRegion :: (Time,Time) -> Notes -> Notes
+getRegion region = filter (`within` region)
+    where within note (t1,t2) = t1 <= start note && start note < t2
+
+-- | Remove all notes that /start/ within a specified time interval.
+-- The interval is half-open, i.e. @[t1,t2)@.
+removeRegion :: (Time,Time) -> Notes -> Notes
+removeRegion region = filter $ not . (`within` region)
+    where within note (t1,t2) = t1 <= start note && start note < t2
 
 {-----------------------------------------------------------------------------
     Time utilities
@@ -330,6 +333,11 @@ remainder note
 -- Returns an empty list if the time is not on the beat.
 getOnBeat :: Time -> Notes -> Notes
 getOnBeat t xs = if thousandp t then takeWhile ((t ==) . start) xs else []
+
+-- | Check whether all events start at the indicated time
+-- and whether this time is on a beat.
+onBeat :: Time -> Notes -> Bool
+onBeat t xs = thousandp t && all ((t==) . start) xs
 
 -- | Break notes into beat-sized groupings.
 -- Each note may be split into several parts with duration 1000 each.
@@ -431,7 +439,7 @@ composeBach db = do
         else return $ finish notes
 
     where
-    finish = id
+    finish = id -- ensureNecessaryCadences
     {- TODO: add this later
     finish = cadenceCollapse . transposeToBachRange
            . fixUpBeat . ensureNecessaryCadences
@@ -549,7 +557,8 @@ waitForCadence xs = go (start $ head xs) xs
         | otherwise          = go t xs
 
 
--- | Ensures that the cadences are proper.
+-- | Ensure that long phrases consisting of interleaving notes
+-- are interrupted by full chords.
 --
 -- Assumes that the notes are ordered by starting times.
 ensureNecessaryCadences :: Notes -> Notes
@@ -559,7 +568,14 @@ ensureNecessaryCadences notes =
     cadenceStartTimes = findCadenceStartTimes notes
     pad0 xs = if head xs /= 0 then 0 : xs else xs
 
+-- | Returns phrases of duration greater than 12000 (3 measures)
+getLongPhrases :: [Time] -> [(Time,Time)]
+getLongPhrases xs = filter p $ zip xs (drop 1 xs)
+    where p (x,y) = y-x > 12000
 
+-- | Find all times where the notes form a well-distinguished chord
+-- of quarter or half note length. In other words,
+-- the chord contains no held notes or passing notes.
 findCadenceStartTimes :: Notes -> [Time]
 findCadenceStartTimes []    = []
 findCadenceStartTimes notes = case distanceToCadence notes of
@@ -599,5 +615,43 @@ findWithDuration dt notes
     checkNote x = start x == startTime && duration x == dt
     startTime   = start $ head $ notes
 
-discoverCadences = undefined
-getLongPhrases   = undefined
+-- | Discover and resolve cadences within the specified phrases.
+discoverCadences :: [(Time,Time)] -> Notes -> Notes
+discoverCadences []     ys = ys
+discoverCadences (x:xs) ys = discoverCadences xs $ discoverCadence x ys
+
+-- | Discover and resolve possible cadences.
+discoverCadence (x,y) notes = case bestLocationForNewCadence of
+        Nothing  -> notes   -- couldn't find a place to insert cadence
+        Just pos -> sortByStart $ resolve (getRegion (pos, pos+1000) relevantNotes)
+                                  ++ removeRegion (pos, pos+1000) notes
+    where
+    relevantNotes    = getRegion (x,y) notes
+    placesForCadence = findCadencePlace relevantNotes
+    bestLocationForNewCadence = if null placesForCadence
+            then Nothing
+            else Just $ findClosest ((x+y)/2) placesForCadence
+                -- place the cadence somewhere in the middle.
+
+-- | Find the best places for a first cadence.
+findCadencePlace :: Notes -> [Time]
+findCadencePlace = map (start . head) . filter p . collectBeats
+    where
+    p beat =  onBeat onTime (take 4 beat)       -- a chord on the beat
+           && isTriad (map pitch $ take 4 beat) -- which forms a triad
+           && all notBeyond1000 beat            -- no notes that end beyond onTime + 1000
+        where
+        onTime             = start $ head beat
+        notBeyond1000 note = end note - onTime <= 1000
+
+-- | Resolves the beat if necessary.
+--
+-- Keep all notes that start simultaneously with the first one
+-- and elongate their durations to 1000 if necessary.
+resolve :: Notes -> Notes
+resolve = map fixDuration . getOnsetNotes
+    where
+    fixDuration note = if duration note < 1000 then note { duration = 1000 } else note 
+
+
+
