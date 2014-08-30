@@ -473,7 +473,21 @@ reTime = go 0
         where
         shift note = note { start = start note + currentTime }
 
-checkForParallel _ = False
+-- | Check for parallel motion in the first two beats.
+--
+-- >>> checkForParallel $ concat [[note 0 (60+i) 1000 i, note 1000 (64+i) 1000 i] | i<-[1..4]]
+-- True
+checkForParallel :: Notes -> Bool
+checkForParallel notes = case sortedPitchesByBeat notes of
+    (x:y:_) -> let differences = zipWith (-) x y in
+        length x == 4 && length y == 4
+        && (all (>=0) differences || all (<0) differences)
+    _       -> False
+
+sortedPitchesByBeat
+    = map (map pitch)
+    . map (\beat -> getOnBeat (start $ head beat) beat)
+    . collectBeats . take 30 . sortByStart
 
 -- | Returns the major tonic.
 checkMT :: Notes -> Bool

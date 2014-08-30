@@ -1160,6 +1160,33 @@ T|#
   "Finds the best ontime."
   (find-closest (+ (/ (- (my-last on-times)(first on-times)) 2)(first on-times)) on-times))
 
+;;;;;
+#|Calling (check-for-parallel ((0 48 1000 4 96) (0 64 1000 3 96) . . .
+check-for-parallel returned t|#
+;;;;;
+
+(defun CHECK-FOR-PARALLEL (events)
+  "Checks for parallel motion."
+  (let ((sorted-pitches-by-beat (loop for beat in (collect-beats (firstn 30 (sortcar #'< events)))
+                                      collect (get-pitches (get-on-beat beat (very-first beat))))))
+    (and (equal (length (first sorted-pitches-by-beat)) 4)
+         (equal (length (second sorted-pitches-by-beat)) 4)
+         (or (and (plusp (- (first (first sorted-pitches-by-beat))
+                            (first (second sorted-pitches-by-beat))))
+                  (plusp (- (second (first sorted-pitches-by-beat))
+                            (second (second sorted-pitches-by-beat))))
+                  (plusp (- (third (first sorted-pitches-by-beat))
+                            (third (second sorted-pitches-by-beat))))
+                  (plusp (- (fourth (first sorted-pitches-by-beat))
+                            (fourth (second sorted-pitches-by-beat)))))
+             (and (minusp (- (first (first sorted-pitches-by-beat))
+                             (first (second sorted-pitches-by-beat))))
+                  (minusp (- (second (first sorted-pitches-by-beat))
+                             (second (second sorted-pitches-by-beat))))
+                  (minusp (- (third (first sorted-pitches-by-beat))
+                             (third (second sorted-pitches-by-beat))))
+                  (minusp (- (fourth (first sorted-pitches-by-beat))
+                             (fourth (second sorted-pitches-by-beat)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Timing utilities for composition
