@@ -89,83 +89,6 @@
                      (remove-region best-location-for-new-cadence (+ best-location-for-new-cadence 1000) ordered-events))))))
 
 ;;;;;
-#| Calling (FIND-CADENCE-START-TIMES ((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96))) 
- FIND-CADENCE-START-TIMES returned (3000)|#
-;;;;;
-
-(defun FIND-CADENCE-START-TIMES (ordered-events)
-  "Finds the cadence start times."
-  (let ((distance-to-cadence (distance-to-cadence ordered-events)))
-    (cond ((null ordered-events)())
-          ((null distance-to-cadence)
-           (find-cadence-start-times (rest ordered-events)))
-          (t (cons distance-to-cadence
-                   (find-cadence-start-times (clear-to distance-to-cadence ordered-events)))))))
-
-;;;;;
-#| Calling (DISTANCE-TO-CADENCE ((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96))) 
-  FIND-2000S returned NIL
- DISTANCE-TO-CADENCE returned 3000|#
-;;;;;
-
-(defun DISTANCE-TO-CADENCE (ordered-events)
-  "Returns the distance tocadence of the arg."
-  (let ((quarter-note-distance (find-1000s ordered-events))
-        (half-note-distance (find-2000s ordered-events)))
-    (cond ((and (null quarter-note-distance)(null half-note-distance)) ())
-          ((null quarter-note-distance) half-note-distance)
-          ((null half-note-distance) quarter-note-distance)
-          (t (if (> quarter-note-distance half-note-distance) half-note-distance
-                 quarter-note-distance)))))
-
-;;;;;
-#| Calling (FIND-1000S ((3000 61 1000 1 96) (3000 69 1000 2 96) (3000 69 1000 3 96) (3000 69 1000 4 96))) 
- FIND-1000S returned 3000|#
-;;;;;
-
-(defun FIND-1000S (ordered-events &optional (start-time (very-first ordered-events)))
-  "Returns the ontime if the ordered events are all duration 1000."
-  (cond ((null ordered-events)())
-        ((and (let ((channel-1-event (first (get-channel 1 ordered-events))))
-                (and (equal (third channel-1-event) 1000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 2 ordered-events))))
-                (and (equal (third channel-1-event) 1000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 3 ordered-events))))
-                (and (equal (third channel-1-event) 1000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 4 ordered-events))))
-                (and (equal (third channel-1-event) 1000)
-                     (equal start-time (first channel-1-event)))))
-         start-time)
-        (t (find-1000s (rest ordered-events)))))
-
-;;;;;
-#| Calling (FIND-2000S ((3000 61 1000 4 96) (3000 69 1000 3 96))) 
- FIND-2000S returned NIL|#
-;;;;;
-
-(defun FIND-2000S (ordered-events &optional (start-time (very-first ordered-events)))
-  "Returns events of 2000 duration."
-  (cond ((null ordered-events)())
-        ((and (let ((channel-1-event (first (get-channel 1 ordered-events))))
-                (and (equal (third channel-1-event) 2000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 2 ordered-events))))
-                (and (equal (third channel-1-event) 2000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 3 ordered-events))))
-                (and (equal (third channel-1-event) 2000)
-                     (equal start-time (first channel-1-event))))
-              (let ((channel-1-event (first (get-channel 4 ordered-events))))
-                (and (equal (third channel-1-event) 2000)
-                     (equal start-time (first channel-1-event)))))
-         start-time)
-        (t (find-2000s (rest ordered-events)))))
-
-
-;;;;;
 #| Calling (GET-BEAT-LENGTH ((24000 59 1000 4 96) (24000 62 1000 3 96) (24000 67 1000 2 96) (24000 74 1000 1 96))) 
  GET-BEAT-LENGTH returned 1000|#
 ;;;;;
@@ -462,17 +385,6 @@ reset returned (((33000 52 500 4 96) (33000 64 500 3 96)  . . .|#
   "Resets the events for the delayed beat."
   (loop for event in (set-to-zero  events)
         collect (cons (+ begin-time (first event))(rest event))))
-
-;;;;;
-#|Calling (ensure-necessary-cadences ((0 52 1000 4 96) (0 60 1000 3 96) . . .
- ensure-necessary-cadences returned ((0 52 1000 4 96) (0 60 1000 3 96) . . .|#
-;;;;;
-
-(defun ENSURE-NECESSARY-CADENCES (ordered-events)
-  "Ensures the cadences are proper."
-  (let ((cadence-start-times (find-cadence-start-times ordered-events)))
-    (Discover-cadences (get-long-phrases (if (not (zerop (first cadence-start-times))) (cons 0 cadence-start-times) cadence-start-times))
-                   ordered-events)))
 
 ;;;;;
 #|Calling (check-for-parallel ((0 48 1000 4 96) (0 64 1000 3 96) . . .

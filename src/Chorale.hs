@@ -549,7 +549,55 @@ waitForCadence xs = go (start $ head xs) xs
         | otherwise          = go t xs
 
 
+-- | Ensures that the cadences are proper.
+--
+-- Assumes that the notes are ordered by starting times.
+ensureNecessaryCadences :: Notes -> Notes
+ensureNecessaryCadences notes =
+    discoverCadences (getLongPhrases $ pad0 cadenceStartTimes) notes
+    where
+    cadenceStartTimes = findCadenceStartTimes notes
+    pad0 xs = if head xs /= 0 then 0 : xs else xs
 
 
+findCadenceStartTimes :: Notes -> [Time]
+findCadenceStartTimes []    = []
+findCadenceStartTimes notes = case distanceToCadence notes of
+    Nothing -> findCadenceStartTimes (tail notes)
+    Just d  -> d : findCadenceStartTimes (clearTo d notes)
 
+distanceToCadence :: Notes -> Maybe Time
+distanceToCadence notes = with min quarterNoteDistance halfNoteDistance
+    where
+    quarterNoteDistance = find1000s notes
+    halfNoteDistance    = find2000s notes
+    
+    with f Nothing  Nothing  = Nothing
+    with f (Just x) Nothing  = Just x
+    with f Nothing  (Just y) = Just y
+    with f (Just x) (Just y) = Just $ f x y
 
+-- | Returns the ontime if all events have duration 1000.
+--
+-- >>> find1000s [note 3000 61 1000 1, note 3000 69 1000 2, note 3000 69 1000 3, note 3000 69 1000 4]
+-- Just (3000 % 1)
+find1000s = findWithDuration 1000
+
+-- | Returns the ontime if all events have duration 2000.
+find2000s = findWithDuration 2000
+
+findWithDuration :: Time -> Notes -> Maybe Time
+findWithDuration dt []    = Nothing 
+findWithDuration dt notes
+    | all checkNote channels = Just startTime
+    | otherwise              = findWithDuration dt (tail notes)
+    where
+    channels = [ head channel | c <- [1..4]
+               , let channel = getChannel c notes
+               , not (null channel)
+               ]
+    checkNote x = start x == startTime && duration x == dt
+    startTime   = start $ head $ notes
+
+discoverCadences = undefined
+getLongPhrases   = undefined
