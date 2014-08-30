@@ -86,52 +86,6 @@
                                   collect (second event))))))
 
 ;;;;;
-#|Calling (cadence-collapse ((0 48 1000 4 96) (0 60 1000 3 96) (0 67 1000 2 96) (0 76 1000 1 96) . . . 
-cadence-collapse returned ((0 48 1000 4 96) (0 60 1000 3 96) . . . .|#
-;;;;;
-
-(defun CADENCE-COLLAPSE (events)
-  "Ensures the final chord will not have offbeats."
-  (apply #'append (collapse (collect-beats (sortcar #'< events)))))
-
-;;;;;
-#|Calling (collapse (((0 48 1000 4 96) (0 60 1000 3 96) (0 67 1000 2 96)  . . .
-collapse returned (((0 48 1000 4 96) (0 60 1000 3 96)  . . . |#
-;;;;;
-
-(defun COLLAPSE (beats)
-  "Collapses the final cadence."
-  (cond ((null beats)())
-        ((and (equal (length (first beats)) 4)
-              (equal (third (first (first beats))) 2000))
-         (cons (make-1000s (first beats))
-               (collapse (reset (rest beats) 1000))))
-        (t (cons (first beats)
-                 (collapse (rest beats))))))
-
-;;;;;
-#|   Calling (make-1000s ((32000 52 2000 4 96) (32000 59 2000 3 96) (32000 64 2000 2 96) (32000 67 2000 1 96))) 
-   make-1000s returned ((32000 52 1000 4 96) (32000 59 1000 3 96) (32000 64 1000 2 96) (32000 67 1000 1 96))|#
-;;;;;
-
-(defun MAKE-1000S (beat)
-  "Makes all of the beat's durations into 1000s."
-  (loop for event in beat
-        collect (append (firstn 2 event) '(1000) (nthcdr 3 event))))
-
-;;;;;
-#|   Calling (reset (((34000 52 500 4 96) (34000 64 500 3 96) (34000 67 500 2 96) (34000 72 1000 1 96) . . .
-reset returned (((33000 52 500 4 96) (33000 64 500 3 96)  . . .|#
-;;;;;
-
-(defun RESET (beats subtraction)
-  "Resets the beats appropriately."
-  (if (null beats)()
-      (cons (loop for event in (first beats)
-                  collect (append (list (- (first event) subtraction)) (cdr event)))
-            (reset (rest beats) subtraction))))
-
-;;;;;
 #| Calling (delay-for-upbeat ((0 60 1000 1 124))) 
  delay-for-upbeat returned ((3000 60 1000 1 124))
 |#

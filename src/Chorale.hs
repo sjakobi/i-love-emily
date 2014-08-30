@@ -309,6 +309,10 @@ setToZero xs = [ x { start = start x - diff } | x <- xs ]
     where
     diff = start $ head xs
 
+-- | Subtract a time interval from every starting time.
+resetBeats :: Time -> [Notes] -> [Notes]
+resetBeats dt = map $ map $ \note -> note { start = start note - dt }
+
 -- | Total duration of a piece of music.
 totalDuration :: Notes -> Time
 totalDuration notes = last - first
@@ -460,7 +464,6 @@ composeBach db = do
         then notes
         else delayForUpbeat notes   -- the piece actually begins with an upbeat
 
-cadenceCollapse = id
 transposeToBachRange = id
 delayForUpbeat  = id
 
@@ -519,7 +522,7 @@ composeMaybePiece db = do
                       && findEventsDuration notes > 1000
                       && (if mood == Minor
                             then matchTonicMinor notes
-                            else matchBachTonic  notes)  = return $ Just []
+                            else matchBachTonic  notes)  = return $ Just [name]
                     | otherwise                          = do
                         case pickNextBeat db name of
                             Nothing     -> return Nothing
@@ -532,7 +535,7 @@ composeMaybePiece db = do
                     Just beatit = Map.lookup name (beatIts db)
                     notes       = events beatit
 
-            return . fmap (++ [name]) =<< loop 0 name
+            loop 0 name
 
 findEventsDuration _ = 2000
 
@@ -578,6 +581,8 @@ matchBachTonic notes = not (null chord) && harmonicSubset chord [60,64,67]
     where
     chord = map pitch $ getLastBeatEvents $ breakIntoBeats notes
 
+    -- This is incorrect. The pitches need to match in order?
+
 -- | Retrieve the last four events if the first of them has a duration
 -- that is a multiple of 1000. Return an empty list otherwise.
 getLastBeatEvents :: Notes -> Notes
@@ -602,6 +607,20 @@ waitForCadence xs = go (start $ head xs) xs
         | start x > t + 4000 = True
         | duration x > 1000  = False
         | otherwise          = go t xs
+
+-- | Ensures the final chord will not have offbeats.
+--
+-- TODO: I don't see how this is supposed to work.
+-- Durations 2000 are simply made to 1000s?
+cadenceCollapse :: Notes -> Notes
+cadenceCollapse = concat . collapse . collectBeats . sortByStart
+    where
+    collapse [] = []
+    collapse (x:xs) = if length x == 4 && duration (head x) == 2000
+        then map fixDuration x : collapse (resetBeats 1000 xs)
+        else                 x : collapse xs
+
+    fixDuration note = note { duration = 1000 }
 
 
 -- | Ensure that long phrases consisting of interleaving notes
