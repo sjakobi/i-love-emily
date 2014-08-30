@@ -1,39 +1,6 @@
-
-                   ;;;;;COMPUTER MODELS OF MUSICAL CREATIVITY;;;;;
-                   ;;;;;            By David Cope            ;;;;;
-                   ;;;;;     Chorale Function/Chapter 4      ;;;;;
-                   ;;;;;             COMMON LISP             ;;;;;
-                   ;;;;;           platform dependent        ;;;;;
-                   ;;;;;          code to run chorale        ;;;;;
-                   ;;;;;               function              ;;;;;
-                   ;;;;;COMPUTER MODELS OF MUSICAL CREATIVITY;;;;;
-
-;;;this loads the data
-
-(setq *minimum-stack-overflow-size* 3048576)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 :: Composition from a database
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;
-#|  Calling (GET-NOTE-TIMING (24000 59 1000 4 96) 24000) 
-  GET-NOTE-TIMING returned 1000|#
-;;;;;
-
-(defun GET-NOTE-TIMING (event time)
-  "grunt work for get-beat-length"
-  (- (+ (first event)(third event)) time))
-
-;;;;;
-#| Calling (get-pitches ((0 48 1000 4 96))) 
- get-pitches returned (48)|#
-;;;;;
-
-(defun GET-PITCHES (events)
-  "Gets the pitches from its arg."
-  (loop for event in events
-        collect (second event)))
 
 ;;;;;
 #| Calling (transpose-to-bach-range ((0 60 1000 4 96) (0 64 1000 3 96)  . . .
