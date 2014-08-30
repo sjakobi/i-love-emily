@@ -452,16 +452,17 @@ composeBach db = do
         else return $ finish notes
 
     where
-    finish = ensureNecessaryCadences
-    {- TODO: add this later
     finish = cadenceCollapse . transposeToBachRange
            . fixUpBeat . ensureNecessaryCadences
 
     fixUpBeat notes =
-        if checkMT $ getOnBeat $ start $ head notes
+        if checkMT $ getOnBeat (start $ head notes) notes  -- starts on tonic
         then notes
-        else delayForUpbeat notes
-    -}
+        else delayForUpbeat notes   -- the piece actually begins with an upbeat
+
+cadenceCollapse = id
+transposeToBachRange = id
+delayForUpbeat  = id
 
 -- | Retime a sequence of beats to fit together.
 reTime :: [Notes] -> [Notes]
@@ -546,14 +547,24 @@ pickNextBeat db name = do
             -- write an email concerning  incfBeat
 
 -- | Pick a triad beginning. May fail.
---
--- TODO: Fix this implementation to actually be random.
 pickTriadBeginning :: Database -> Prob (Maybe (Name,Mood))
-pickTriadBeginning db = return $ Just (name,mood)
-    where
-    name        = head (startBeats db)
-    Just beatit = Map.lookup name (beatIts db)
-    mood        = if matchTonicMinor $ take 4 $ events beatit then Minor else Major
+pickTriadBeginning db = do
+    name <- choose (startBeats db)
+    let
+        Just beatit = Map.lookup name (beatIts db)
+        mood        = if matchTonicMinor $ take 4 $ events beatit
+                      then Minor else Major
+        
+        notes   = events beatit
+        pitches = map pitch $ getOnBeat (start $ head notes) notes
+        isGood  =
+            any (pitches `harmonicSubset`)            -- one of the good triads
+                [[0,4,8], [0,4,7], [0,5,8], [2,7,11]]
+            && (duration (head notes) <= 1000)
+            && length notes == 4
+
+    return $ if isGood then Just (name, mood) else Nothing
+
 
 -- | Check whether the notes form a C minor tonic.
 matchTonicMinor :: Notes -> Bool

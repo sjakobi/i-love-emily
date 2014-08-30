@@ -17,39 +17,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;
-#| Calling (find-triad-beginning) 
- find-triad-beginning returned b43500b-14|#
-;;;;;
-
-(defun FIND-TRIAD-BEGINNING ()
-  "Returns the db with a triad beginning."
-  (let* ((test (choose-one (eval (first (eval *composer*))))) ; λ - randomly choose a bach beat symbol
-         (on-beat (get-on-beat (events (eval test))(very-first (events (eval test)))))
-         (pcs (create-pitch-class-set (get-pitches on-beat))))
-      (if (and (triad? on-beat)
-               (or (members-all '(0 4 8) pcs)
-                   (members-all '(0 4 7) pcs)
-                   (members-all '(0 5 8) pcs)
-                   (members-all '(2 7 11) pcs))
-               (<= (third (first (events (eval test)))) 1000)
-               (equal (length (events (eval test))) 4))
-        test
-        (find-triad-beginning)))) ; λ - recursively call until triad found
-                                  ;     this seems rather inefficient
-
-;;;;;
-#|  Calling (members-all (0 4 8) (2 7 11)) 
-  members-all returned nil|#
-;;;;;
-
-(defun MEMBERS-ALL (arrows target)
-  "Checks to see if arrows are all in target."
-  (cond ((null arrows) t)
-        ((member (first arrows) target)
-         (members-all (rest arrows) target))
-        (t ())))
-
-;;;;;
 #|  Calling (GET-NOTE-TIMING (24000 59 1000 4 96) 24000) 
   GET-NOTE-TIMING returned 1000|#
 ;;;;;
