@@ -464,7 +464,15 @@ composeBach db = do
         then notes
         else delayForUpbeat notes   -- the piece actually begins with an upbeat
 
-transposeToBachRange = id
+-- | Transpose a piece of music into a pitch range commonly used by Bach.
+transposeToBachRange :: Notes -> Notes
+transposeToBachRange notes = transpose middle notes
+    where
+    low  = minimum $ map pitch notes
+    high = maximum $ map pitch notes
+    middle = round $ fromIntegral ((83-high) + (40-low)) / 2
+
+
 delayForUpbeat  = id
 
 -- | Retime a sequence of beats to fit together.
