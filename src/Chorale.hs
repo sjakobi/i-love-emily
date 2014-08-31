@@ -472,8 +472,11 @@ transposeToBachRange notes = transpose middle notes
     high = maximum $ map pitch notes
     middle = round $ fromIntegral ((83-high) + (40-low)) / 2
 
-
-delayForUpbeat  = id
+-- | Start piece of music at time 3000.
+delayForUpbeat :: Notes -> Notes
+delayForUpbeat = delay 3000 . setToZero
+    where
+    delay dt = map $ \note -> note { start = start note + dt }
 
 -- | Retime a sequence of beats to fit together.
 reTime :: [Notes] -> [Notes]
