@@ -13,10 +13,10 @@ pairings xs = [(y,z) | (y:ys) <- tails xs, z <- ys]
 
 -- | Split a list into equal-sized chunks.
 --
--- >>> chunk 4 [1..10]
+-- >>> chunk 4 [1..10 :: Int]
 -- [[1,2,3,4],[5,6,7,8],[9,10]]
 chunk :: Int -> [a] -> [[a]]
-chunk n [] = []
+chunk _ [] = []
 chunk n xs = ys : chunk n zs
     where
     (ys,zs) = splitAt n xs

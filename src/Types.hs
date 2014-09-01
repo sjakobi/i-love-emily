@@ -5,7 +5,7 @@
 module Types where
 
 import Control.Monad.Trans.State
-import Data.List                 (sortBy, tails)
+import Data.List                 (sortBy)
 import Data.Ord                  (comparing)
 import System.Random
 
