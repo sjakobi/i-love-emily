@@ -9,7 +9,8 @@ import           Data.Maybe         (fromMaybe, mapMaybe)
 import           Data.Ord           (comparing)
 import qualified Data.Vector        as V
 
-import           Internal.Utils     (pairings, spanPlus, takeUntilEmpty, (.:))
+import           Internal.Utils     (pairings, spanPlus, unfoldListUntilEmpty,
+                                     (.:))
 import           Types
 
 type Tension = Double
@@ -136,7 +137,7 @@ mapAdd = zipWith4 (\a b c d -> a + b + c + d)
 
 -- | Collects beat lists.
 collectBeatLists :: [[Marked Note]] -> [[[Marked Note]]]
-collectBeatLists = takeUntilEmpty (spanPlus (any isStarred))
+collectBeatLists = unfoldListUntilEmpty (spanPlus (any isStarred))
 
 -- | Collects the pitches from its arg.
 collectPitchLists :: [[[Marked Note]]] -> [[[Pitch]]]
@@ -158,7 +159,7 @@ collectPitchLists = map (map (map (pitch . unmark)))
 -- >>> map (pitch . unmark) $ head $ breakAtEachEntrance bookExample
 -- [73,69,64,45]
 breakAtEachEntrance :: Notes -> [[Marked Note]]
-breakAtEachEntrance = takeUntilEmpty breakAtEachEntrance'
+breakAtEachEntrance = unfoldListUntilEmpty breakAtEachEntrance'
                     . sortByStart
                     . fixTheTriplets
 

@@ -1,6 +1,6 @@
 module Internal.Utils where
 
-import Data.List (tails)
+import Data.List (tails, unfoldr)
 
 -- | Return all ways to choose two elements of the list.
 -- In the result pairs, the first component always comes earlier in the list
@@ -35,16 +35,15 @@ spanPlus p xs = case span p xs of
                   (as, b:bs) -> (as ++ [b], bs)
                   t -> t
 
--- | Similar to a map.
--- The difference is that in @'takeUntilEmpty' f xs@, @f@ is repeatedly
--- applied to the entire list @xs@ until @xs@ is empty.
+-- | Unfold a list by repeatedly applying a function to it until it is
+-- empty.
 -- >>> let f xs = let (hh, tl) = splitAt 2 xs in (sum hh, tl)
--- >>> takeUntilEmpty f [1..10 :: Int]
+-- >>> unfoldListUntilEmpty f [1..10 :: Int]
 -- [3,7,11,15,19]
-takeUntilEmpty :: ([a] -> (b, [a])) -> [a] -> [b]
-takeUntilEmpty _ [] = []
-takeUntilEmpty f xs = y : takeUntilEmpty f xs'
-  where (y, xs') = f xs
+unfoldListUntilEmpty :: ([a] -> (b, [a])) -> [a] -> [b]
+unfoldListUntilEmpty f = unfoldr (\xs -> if null xs
+                                            then Nothing
+                                            else Just (f xs))
 
 infixr 9 .:
 (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
