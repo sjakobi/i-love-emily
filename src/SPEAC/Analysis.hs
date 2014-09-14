@@ -8,8 +8,13 @@ captureBeats = undefined
   -- collectBeats
 
 collectBeats :: Notes -> Time -> [Notes]
-collectBeats = undefined
-  -- collect-beat
+collectBeats clarifiedMusic beat = filter (not . null) $ loop clarifiedMusic beat
+  where
+    loop [] _ = []
+    loop ns t = collected : loop ns' (t + beat)
+      where
+        collected = collectBeat t ns
+        ns' = drop (length collected) ns
 
 collectBeat :: Time -> Notes -> Notes
 collectBeat beat = takeWhile ((< beat) . start)
