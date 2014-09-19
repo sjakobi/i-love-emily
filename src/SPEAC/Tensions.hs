@@ -280,10 +280,11 @@ createListOfTensions = map (minimum . map (rate' . translateToIntervals'))
 -- >>> translateToIntervals' [73, 69, 64, 45]
 -- [28,19]
 translateToIntervals' :: [Pitch] -> [Interval]
-translateToIntervals' = intervalsToBassNote . removeOctaves . prependBassNote
-  where intervalsToBassNote (n:ns) = map (subtract n) ns
-        intervalsToBassNote []     = error "Impossible!"
-        prependBassNote ns = minimum ns : ns
+translateToIntervals' ps =
+    map (subtract bassNote) $ removeOctaves noBassOctaves
+  where
+    bassNote = minimum ps
+    noBassOctaves = filter (\a -> (a - bassNote) `rem` 12 /= 0) ps
 
 -- | Removes all octave doublings.
 -- >>> removeOctaves [60, 67, 64, 72]
