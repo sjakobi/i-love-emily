@@ -1,11 +1,11 @@
 module SPEAC.Analysis where
 
-import Types (Note(..), Notes, Time)
+import Types (Note (..), Notes, Time, sortByStart)
 
+-- | Returns the music in beat-size chunks.
 captureBeats :: Notes -> Time -> [Notes]
-captureBeats = undefined
-  -- breakEventsIntoBeats
-  -- collectBeats
+captureBeats music beat =
+    collectBeats (sortByStart $ breakEventsIntoBeats beat music) beat
 
 collectBeats :: Notes -> Time -> [Notes]
 collectBeats clarifiedMusic beat = filter (not . null) $ loop clarifiedMusic beat
