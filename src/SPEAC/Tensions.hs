@@ -393,6 +393,9 @@ unmark :: Marked a -> a
 unmark (Unstarred x) = x
 unmark (Starred x) = x
 
+-- | Determine the interval between two pitches.
+interval :: Pitch -> Pitch -> Interval
+interval a b = abs (a - b) `rem` 12
 
 -- | Helper function to convert from Cope's "event" type to 'Note'.
 readNote :: (Time, Pitch, Time, Int, Int) -> Note

@@ -13,10 +13,6 @@ type Time     = Rational
 type Pitch    = Int
 type Interval = Pitch
 
--- | Determine the interval between two pitches.
-interval :: Pitch -> Pitch -> Interval
-interval a b = abs (a - b) `rem` 12
-
 type Channel  = Int
 
 data Note = Note
