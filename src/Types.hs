@@ -52,3 +52,10 @@ choose :: [a] -> Prob a
 choose xs = do
     k <- state $ \s -> randomR (0,length xs-1) s
     return (xs !! k)
+
+data SpeacLabel = Statement
+                | Preparation
+                | Extension
+                | Antecedent
+                | Consequent
+                deriving (Eq, Show)
