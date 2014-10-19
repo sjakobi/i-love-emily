@@ -1,6 +1,9 @@
 module SPEAC.Analysis where
 
-import Types (Note (..), Notes, Time, sortByStart)
+import Data.Maybe (listToMaybe)
+
+import SPEAC.Tensions (Tension)
+import Types (Note (..), Notes, SpeacLabel (..), Time, sortByStart)
 
 -- | Returns the music in beat-size chunks.
 captureBeats :: Notes -> Time -> [Notes]
@@ -34,3 +37,43 @@ breakEvent beat event@(Note {start = s, duration = d})
   where event' = event { start = s + beat
                        , duration = d - beat
                        }
+
+-- |
+-- >>> runSpeac [0.56, 0.41, 0.78, 0.51, 1.33, 0.51, 1.26, 0.51] 0.73
+-- [Preparation,Extension,Statement,Extension,Antecedent,Consequent,Antecedent,Consequent]
+runSpeac :: [Tension] -> Tension -> [SpeacLabel]
+runSpeac weights average =
+  developSpeac weights average (maximum weights) (minimum weights)
+
+-- |
+-- >>> developSpeac [0.56, 0.41, 0.78, 0.51, 1.33, 0.51, 1.26, 0.51] 0.73 1.33 0.41
+-- [Preparation,Extension,Statement,Extension,Antecedent,Consequent,Antecedent,Consequent]
+developSpeac :: [Tension] -> Tension -> Tension -> Tension -> [SpeacLabel]
+developSpeac weights average largest smallest =
+    go weights Nothing Nothing
+  where
+    go []     _              _                  = []
+    go (w:ws) previousWeight previousAssignment =
+        assignment : go ws (Just w) (Just previousAssignment')
+      where
+        (assignment, previousAssignment')
+          | withinPointTwo w previousWeight
+          = (Extension, Extension)
+          | withinPointTwo w (listToMaybe ws) 
+          = assignments Preparation Extension False
+          | withinPointTwo w (Just average)
+          = assignments Statement Extension True
+          | withinPointTwo w (Just largest)
+          = assignments Antecedent Extension False
+          | (Just Antecedent) <- previousAssignment
+          , withinPointTwo w (Just smallest)
+          = (Consequent, Consequent)
+          | otherwise
+          = assignments Statement Extension True
+        assignments a b aIsPrev = (ass, prev)
+          where ass = if previousAssignment == (Just a) then b else a
+                prev = if aIsPrev then a else ass
+
+withinPointTwo :: Tension -> Maybe Tension -> Bool
+withinPointTwo _     Nothing       = False
+withinPointTwo first (Just second) = abs (first - second) < 0.2
