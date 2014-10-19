@@ -5,6 +5,9 @@ import Data.Maybe (listToMaybe)
 import SPEAC.Tensions (Tension)
 import Types (Note (..), Notes, SpeacLabel (..), Time, sortByStart)
 
+average :: Fractional a => [a] -> a
+average xs = sum xs / (fromIntegral $ length xs)
+
 -- | Returns the music in beat-size chunks.
 captureBeats :: Notes -> Time -> [Notes]
 captureBeats music beat =
@@ -42,14 +45,14 @@ breakEvent beat event@(Note {start = s, duration = d})
 -- >>> runSpeac [0.56, 0.41, 0.78, 0.51, 1.33, 0.51, 1.26, 0.51] 0.73
 -- [Preparation,Extension,Statement,Extension,Antecedent,Consequent,Antecedent,Consequent]
 runSpeac :: [Tension] -> Tension -> [SpeacLabel]
-runSpeac weights average =
-  developSpeac weights average (maximum weights) (minimum weights)
+runSpeac weights average' =
+  developSpeac weights average' (maximum weights) (minimum weights)
 
 -- |
 -- >>> developSpeac [0.56, 0.41, 0.78, 0.51, 1.33, 0.51, 1.26, 0.51] 0.73 1.33 0.41
 -- [Preparation,Extension,Statement,Extension,Antecedent,Consequent,Antecedent,Consequent]
 developSpeac :: [Tension] -> Tension -> Tension -> Tension -> [SpeacLabel]
-developSpeac weights average largest smallest =
+developSpeac weights average' largest smallest =
     go weights Nothing Nothing
   where
     go []     _              _                  = []
@@ -61,7 +64,7 @@ developSpeac weights average largest smallest =
           = (Extension, Extension)
           | withinPointTwo w (listToMaybe ws) 
           = assignments Preparation Extension False
-          | withinPointTwo w (Just average)
+          | withinPointTwo w (Just average')
           = assignments Statement Extension True
           | withinPointTwo w (Just largest)
           = assignments Antecedent Extension False
