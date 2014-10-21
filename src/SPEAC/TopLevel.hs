@@ -5,6 +5,8 @@ import           SPEAC.Tensions (Tension, breakAtEachEntrance,
                                  runTheSPEACWeightings, unmark)
 import           Types
 
+type FormLabel = Char
+
 -- | Top level for the form functions.
 runTheProgram events meter = undefined
 -- breakIntoPhrases
@@ -68,3 +70,18 @@ lispRound n
 -- | Return the total duration length of a sorted list of notes.
 getLength :: Notes -> Time
 getLength events = end (last events) - start (head events)
+
+getSpeacMiddleground :: [([SpeacLabel], Tension)] -> [[(FormLabel, Time)]] -> [([SpeacLabel], Tension)]
+getSpeacMiddleground speacLists groupedForm =
+    map (\phrase -> let test = map snd phrase
+                        avg = average test
+                    in (runSpeac test avg, avg)) groupedSpeacLists
+  where groupedSpeacLists = groupSpeacLists speacLists groupedForm
+
+groupSpeacLists :: [([SpeacLabel], Tension)] -> [[(FormLabel, Time)]] -> [[([SpeacLabel], Tension)]]
+groupSpeacLists _          []                 = []
+groupSpeacLists speacLists groupedForm@(f:fs) = a : groupSpeacLists b fs
+  where (a, b) = splitAt (length f) speacLists
+
+groupForm :: [(FormLabel, Time)] -> [[(FormLabel, Time)]]
+groupForm = undefined
