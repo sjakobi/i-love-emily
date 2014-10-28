@@ -10,16 +10,26 @@ import           Types
 type FormLabel = Char
 
 -- | Top level for the form functions.
-runTheProgram events meter = undefined
--- breakIntoPhrases
--- doSpeacOnPhrases
--- getSpeacMiddleGround
--- groupForm
--- getSpeacBackGround
+runTheProgram :: Notes
+              -> Int
+              -> ( ([SpeacLabel], Tension)
+                 , ([SpeacLabel], Tension)
+                 , [([SpeacLabel], Tension)]
+                 , [([SpeacLabel], Tension)]
+                 , [(FormLabel, Time)]
+                 )
+runTheProgram events meter =
+    (ursatz, speacBackground, speacMiddleground, speacPhraseLists, form)
   where
+    ursatz = getSpeacBackground [speacBackground]
+    speacBackground = getSpeacBackground speacMiddleground
+    speacMiddleground = getSpeacMiddleground speacPhraseLists (groupForm form)
+    speacPhraseLists = doSpeacOnPhrases phrasedEvents meter
+    -- these are the beginnings of each phrase
+    phrasedEvents = breakIntoPhrases events (tail $ map snd form)
     -- form, phraseBeginnings and phraseLabels are just test values,
     -- do not correspond to actual definitions in top-level.lisp
-    form = zip phraseBeginnings phraseLabels
+    form = zip phraseLabels phraseBeginnings
     phraseBeginnings = map (start . unmark . head) $ breakAtEachEntrance events
     phraseLabels = cycle "ab"
 
