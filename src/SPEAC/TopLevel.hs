@@ -1,5 +1,7 @@
 module SPEAC.TopLevel where
 
+import           Data.Function  (on)
+import           Data.List      (groupBy)
 import           SPEAC.Analysis (average, runSpeac)
 import           SPEAC.Tensions (Tension, breakAtEachEntrance,
                                  runTheSPEACWeightings, unmark)
@@ -83,5 +85,6 @@ groupSpeacLists _          []                 = []
 groupSpeacLists speacLists groupedForm@(f:fs) = a : groupSpeacLists b fs
   where (a, b) = splitAt (length f) speacLists
 
+-- | Groups the form elements.
 groupForm :: [(FormLabel, Time)] -> [[(FormLabel, Time)]]
-groupForm = undefined
+groupForm = groupBy ((==) `on` fst)
