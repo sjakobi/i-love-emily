@@ -88,3 +88,11 @@ groupSpeacLists speacLists groupedForm@(f:fs) = a : groupSpeacLists b fs
 -- | Groups the form elements.
 groupForm :: [(FormLabel, Time)] -> [[(FormLabel, Time)]]
 groupForm = groupBy ((==) `on` fst)
+
+-- | Returns the background of the SPEAC analysis.
+-- >>> getSpeacBackground [([Preparation, Extension, Extension, Extension, Extension, Extension, Antecedent, Preparation, Extension, Extension, Extension, Statement], 1.24)]
+-- ([Statement],1.24)
+getSpeacBackground :: [([SpeacLabel], Tension)] -> ([SpeacLabel], Tension)
+getSpeacBackground speacMiddleground = (runSpeac tensions avg, avg)
+  where tensions = map snd speacMiddleground
+        avg = average tensions
