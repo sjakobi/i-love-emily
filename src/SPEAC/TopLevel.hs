@@ -33,21 +33,16 @@ runTheProgram events meter =
     phraseBeginnings = map (start . unmark . head) $ breakAtEachEntrance events
     phraseLabels = cycle "ab"
 
+-- | Groups the notes into time intervals according to the given timings
 breakIntoPhrases :: Notes -> [Time] -> [Notes]
-breakIntoPhrases events []          = [events]
-breakIntoPhrases events (t:timings) = firstEvents : laterEvents
+breakIntoPhrases = breakIntoPhrases' . sortByStart
+
+breakIntoPhrases' :: Notes -> [Time] -> [Notes]
+breakIntoPhrases' sortedEvents []          = [sortedEvents]
+breakIntoPhrases' sortedEvents (t:timings) =
+    firstEvents : breakIntoPhrases' laterEvents timings
   where
-    -- TODO: * use partition
-    --       * maybe make assumptions about order of events and use
-    --         span/break instead
-    firstEvents = getEventsTo t events
-    laterEvents = breakIntoPhrases (getEventsFrom t events) timings
-
-getEventsTo :: Time -> Notes -> Notes
-getEventsTo time = filter (\x -> start x < time)
-
-getEventsFrom :: Time -> Notes -> Notes
-getEventsFrom time = filter (\x -> start x >= time)
+    (firstEvents, laterEvents) = span ((< t) . start) sortedEvents
 
 doSpeacOnPhrases :: [Notes] -> Int -> [([SpeacLabel], Tension)]
 doSpeacOnPhrases phrases meter = map (`doSpeacOnPhrase` meter) phrases
