@@ -78,14 +78,18 @@ lispRound n
 getLength :: Notes -> Time
 getLength events = end (last events) - start (head events)
 
-getSpeacMiddleground :: [([SpeacLabel], Tension)] -> [[(FormLabel, Time)]] -> [([SpeacLabel], Tension)]
+getSpeacMiddleground :: [([SpeacLabel], Tension)]
+                     -> [[(FormLabel, Time)]]
+                     -> [([SpeacLabel], Tension)]
 getSpeacMiddleground speacLists groupedForm =
     map (\phrase -> let test = map snd phrase
                         avg = average test
                     in (runSpeac test avg, avg)) groupedSpeacLists
   where groupedSpeacLists = groupSpeacLists speacLists groupedForm
 
-groupSpeacLists :: [([SpeacLabel], Tension)] -> [[(FormLabel, Time)]] -> [[([SpeacLabel], Tension)]]
+groupSpeacLists :: [([SpeacLabel], Tension)]
+                -> [[(FormLabel, Time)]]
+                -> [[([SpeacLabel], Tension)]]
 groupSpeacLists _          []                 = []
 groupSpeacLists speacLists groupedForm@(f:fs) = a : groupSpeacLists b fs
   where (a, b) = splitAt (length f) speacLists
