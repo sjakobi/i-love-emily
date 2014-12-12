@@ -5,7 +5,7 @@ module SARA.Types where
 
 import Types
 
-data Mode  = Major | Minor
+data Mode  = Major | Minor  deriving (Show)
 type Tempo = Int -- beats per minute
 type Meter = Int -- 3 for 3/4, 4 for 4/4
 
@@ -25,10 +25,10 @@ data Measure = Measure
     , meter                :: Meter
     , measures             :: [Name]    -- measures in this piece
     
-    , music       :: [Notes]
+    , music       :: Notes
     , analysis    :: [AnalysisLabel]
     , destination :: ([Pitch], AnalysisLabel)
-    }
+    } deriving (Show)
 
 -- | Labels for the SPEAC analysis (as used in SARA).
 -- 
@@ -38,9 +38,12 @@ type AnalysisLabel = String
 -- | The @match?@ predicate from the SARA source code.
 -- It has to do with the pattern matching component,
 -- which recognizes a composer's musical signature.
--- Not implemented at the moment.
+--
+-- For the moment, we always return 'False',
+-- which means that no measures from the originals are forced
+-- into the newly composed piece.
 isMatch :: Measure -> Bool
-isMatch _ = True
+isMatch _ = False
 
 defaultMeasure = Measure
     { creator              = ""
