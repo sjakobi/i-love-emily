@@ -47,8 +47,22 @@ simpleCompose db name measureName number meter
                                 (remove-matched-objects
                                 (remove-last-chord last-chord destinations))))))
 
-    destinations = getDestinations name measure-name meter
+    destinations = getDestinations name measureName meter
     lastChord    = getLastChord name measureName
+
+-- | Get measures name that have the same analysis label as the destination.
+getDestinations :: Database -> Name -> Name -> Meter -> [Name]
+getDestinations db name measureName meter =
+    fromJust $ Map.lookup (functionList lexicon) meter
+    where
+    analysis = snd $ destination $ evalMeasure db measureName
+    lexicon  = evalLexicon db name analysis
+    -- If this lexicon doesn't exist, then pick from the network
+    {-
+      (let ((new-test (concat name '- (first *network*) '-lexicon)))
+            (setq *network* (nthcdr *meter* *network*))
+                       new-test))))))
+    -}
 
 -- | Randomly choose a pickup.
 --

@@ -17,7 +17,7 @@ type Map = Map.Map
 ------------------------------------------------------------------------------}
 data Database = Database
     { dbMeasures :: Map Name Measure
-    , dbLexicons :: Map (Name,AnalysisLabel) [Name]
+    , dbLexicons :: Map (Name,AnalysisLabel) Lexicon
     } deriving (Show)
 
 -- | Build a database from a list of pieces.
@@ -26,13 +26,31 @@ makeDatabase pieces = Database
     { dbMeasures = Map.fromList $ concatMap pMeasures pieces
 
     -- build analysis lexicon from measures
-    , dbLexicons = Map.fromListWith (++) $
-        [ ((getSection measureName, head (analysis measure)), [measureName])
+    , dbLexicons = Map.fromListWith unionLexicon $
+        [ (key, lexicon)
         | piece <- pieces
         , (measureName, measure) <- pMeasures piece
         , not ("-cadence" `isSuffixOf` measureName)
+        , let key     = (getSection measureName, head (analysis measure))
+        , let lexicon = singletonLexicon (measureName, measure)
         ]
     }
+
+
+singletonLexicon :: (Name, Measure) -> Lexicon
+singletonLexicon (name, measure) = Lexicon
+    { functionList  = Map.fromList [(meter measure, [name])]
+    , firstNoteList = []
+    , lastChord     = ()
+    }
+
+unionLexicon :: Lexicon -> Lexicon -> Lexicon
+unionLexicon a b = Lexicon
+    { functionList  = Map.unionWith (++) (functionList a) (functionList b)
+    , firstNoteList = firstNoteList a ++ firstNoteList b
+    , lastChord     = ()
+    }
+
 
 data Piece = Piece
     { pMeasures :: [(Name, Measure)]
@@ -68,10 +86,9 @@ evalCadence db name =
 -- | Replacement for  (eval (concat ... '-lexicon))
 --
 -- Returns a list of measures 
-evalLexicon :: Database -> Name -> AnalysisLabel -> [Name]
+evalLexicon :: Database -> Name -> AnalysisLabel -> Lexicon
 evalLexicon db name label =
     fromJust $ Map.lookup (name, label) $ dbLexicons db
-    -- provisions for tiple, double, mono, etc measures ?
 
 
 -- | Given a measure, find the next measure of the original piece

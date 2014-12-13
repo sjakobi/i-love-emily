@@ -3,13 +3,17 @@
 ------------------------------------------------------------------------------}
 module SARA.Types where
 
+import qualified Data.Map as Map
 import Types
 
+{-----------------------------------------------------------------------------
+    Types
+------------------------------------------------------------------------------}
 data Mode  = Major | Minor  deriving (Show)
 type Tempo = Int -- beats per minute
 type Meter = Int -- 3 for 3/4, 4 for 4/4
 
--- | The 'Measure' is rather general.
+-- | The 'Measure' type is rather general.
 -- It represents a measure of music, but also keeps information
 -- about the piece that this measure comes from.
 --
@@ -57,4 +61,13 @@ defaultMeasure = Measure
     , analysis    = []
     , destination = ([], "a1")
     }
+
+
+-- | The 'Lexicon' type collects information about all measures
+-- that have the same 'AnalysisLabel'.
+data Lexicon = Lexicon
+    { functionList  :: Map.Map Meter [Name]
+    , firstNoteList :: [Pitch]
+    , lastChord     :: ()
+    } deriving (Show)
 
