@@ -3,6 +3,8 @@
 ------------------------------------------------------------------------------}
 module SARA.Example where
 
+import IO.ReadCope
+
 import SARA.Database
 import SARA.Types
 
@@ -32,7 +34,7 @@ chopin-maz-one-c1-lexicon (make-instance 'lexicon)))
 -}
 
 parseMusic :: String -> Notes
-parseMusic _ = []
+parseMusic = readNotes
 
 chopin_7_4_1 :: Piece
 chopin_7_4_1 = makePiece name cadence $ map measure [1..count]
@@ -49,8 +51,6 @@ chopin_7_4_1 = makePiece name cadence $ map measure [1..count]
         , measures = makeMeasureNames name count
         }
 
--- TODO: Insert measures into an analysis lexicon
--- according to their musical functions.
     cadence = meta
         { music    = parseMusic "((0 57 1000 3 100) (0 69 1000 2 100) (0 65 1000 2 100) (0 60 1000 2 100) (0 84 500 1 100) (750 77 250 1 100) (1000 55 1000 3 100) (1000 67 1000 2 100) (1000 60 1000 2 100) (1000 76 500 1 100) (1500 79 500 1 100) (2000 55 1000 3 100) (2000 67 1000 2 100) (2000 64 1000 2 100) (2000 72 500 1 100) (2500 73 500 1 100) (3000 55 1000 3 100) (3000 67 1000 2 100) (3000 65 1000 2 100) (3000 74 500 1 100) (3500 77 500 1 100) (4000 55 1000 3 100) (4000 67 1000 2 100) (4000 65 1000 2 100) (4000 69 500 1 100) (4500 71 500 1 100) (5000 60 1000 3 100) (5000 67 1000 2 100) (5000 64 1000 2 100) (5000 72 500 1 100))"
         , analysis = words "p1 c1 c1 a1 a1 c1"
@@ -58,7 +58,7 @@ chopin_7_4_1 = makePiece name cadence $ map measure [1..count]
 
     measure 1 = meta
         { music       = parseMusic "((0 60 1000 3 100) (0 67 1000 2 100) (0 64 1000 2 100) (0 72 333 1 100) (333 74 333 1 100) (666 72 333 1 100) (1000 60 1000 3 100) (1000 68 1000 2 100) (1000 65 1000 2 100) (1000 71 500 1 100) (1500 72 500 1 100) (2000 60 1000 3 100) (2000 65 1000 2 100) (2000 68 1000 2 100) (2000 74 500 1 100) (2500 76 500 1 100))"
-        , analysis    = words "c1 p3 a3" -- belongs to c1 lexicon
+        , analysis    = words "c1 p3 a3"
         , destination = ([77,68,59], "a3")
         }
 

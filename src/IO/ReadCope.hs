@@ -54,10 +54,18 @@ parseBachPiece = do
     symbol "("
     symbol "setq"
     name  <- lexeme $ munch1 isAlphaNum
-    symbol "'("
-    notes <- manyTill parseNote $ symbol ")"
+    symbol "'"
+    notes <- parseNotes
     symbol ")"
     return (name, notes)
+
+readNotes :: String -> Notes
+readNotes = fst . head . readP_to_S parseNotes
+
+parseNotes :: ReadP Notes
+parseNotes = do
+    symbol "("
+    manyTill parseNote $ symbol ")"
 
 parseNote :: ReadP Note
 parseNote =
