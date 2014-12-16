@@ -48,10 +48,15 @@ runProb seed m = fst $ runState (sequence $ repeat m) (mkStdGen seed)
 runProb1 :: Int -> Prob a -> a
 runProb1 seed m = fst $ runState m (mkStdGen seed)
 
+-- | Choose a value uniformly from a list.
 choose :: [a] -> Prob a
 choose xs = do
     k <- state $ \s -> randomR (0,length xs-1) s
     return (xs !! k)
+
+-- | Return a random value between 0 and n (inclusive).
+makeRandom :: Int -> Prob Int
+makeRandom n = state $ randomR (0,n)
 
 data SpeacLabel = Statement
                 | Preparation

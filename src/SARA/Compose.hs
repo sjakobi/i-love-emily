@@ -64,6 +64,21 @@ getDestinations db name measureName meter =
                        new-test))))))
     -}
 
+spliceChannels       = undefined
+
+-- | Return analysis and music, but with music from other
+-- appropriate measures interleaved.
+interchangeChannels :: Database -> Name -> Meter -> Prob ([AnalysisLabel],Notes)
+interchangeChannels db measureName meter = do
+    k <- makeRandom 100
+    return (analysis measure,
+        if recombinance > 60 && k < recombinance
+        then spliceChannels db measureName meter
+        else music measure)
+    where
+    measure = evalMeasure db measureName
+
+
 -- | Randomly choose a pickup.
 --
 -- This function seems to be defunct.
