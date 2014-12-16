@@ -1,59 +1,64 @@
 {-----------------------------------------------------------------------------
     SARA
 ------------------------------------------------------------------------------}
-module SARA.Compose
+module SARA.Compose where
+
+import qualified Data.Map   as Map
+import           Data.Maybe
+
+import SARA.Database
+import SARA.Types
+import Types
+
+-- | Global setting that indicates how much the composition
+-- algorithm should recombine existing material.
+recombinance = 80
 
 
 -- | This is the workhorse compose function.
-simpleCompose :: Database -> Name -> Name -> Int -> Meter -> [???]
+simpleCompose :: Database -> Name -> Name -> Int -> Meter -> Prob [([AnalysisLabel], Notes)]
 simpleCompose db name measureName number meter
-    | number == 0 = []
-    | otherwise   = result
+    | number == 0 = return []
+    | otherwise   = do
+        x  <- interchangeChannels db measureName meter
+        xs <- simpleCompose db name newMeasure (next number) meter
+        return (x:xs)
+
     where
     -- *cadence-match*
     cadenceMatch =
         if  isMatch (evalMeasure db measureName)
             && number == 1
-            && isNothing (nextMeasure measureName)
-            && isMatch (evalCadence (getPhrase measureName))
+            && isNothing (nextMeasure db measureName)
+            && isMatch (evalCadence db (getPhrase measureName))
         then Just $ getPhrase measureName
         else Nothing
-
-    result
-        = interchangeChannels measureName meter
-        : simpleCompose name newMeasure (next number) meter
 
     next n = n - 1  -- simpleCompose counts down until it reaches 0.
 
     newMeasure
         -- return the original next measure if we want to match closely
-        | isMatch (evalMeasure db measureName)
-          && isJust (nextMeasure measureName)
-          && isMatch (evalMeasure db (nextMeasure measureName)) =
-            nextMeasure measureName
+        | isMatch (evalMeasure db measureName),
+          Just next <- nextMeasure db measureName,
+          isMatch (evalMeasure db next) =
+            next
 
-        -- choose a predominant
-        | number == 2 = (let ((pre-dominant-list (get-predominant destinations)))
-                          (make-best-choice
-                           (get-destination-note measure-name)
-                           pre-dominant-list
-                           (get-new-first-notes-list last-chord pre-dominant-list))))
+        -- make a new choice
+        | otherwise = makeBestChoice (getDestinationNote measureName)
+                        list (getNewFirstNotesList list)
+        where
+        list
+            | number == 2 = getPredominant destinations -- choose predominant
+            | otherwise   = removeMatchedObjects (removeLastChord lastChord destinations)
+            -- warning: removeLastChord has side effects
 
-        -- make a chood choice
-        | otherwise   = (make-best-choice
-                           (get-destination-note measure-name)
-                           (remove-matched-objects (remove-last-chord last-chord destinations))
-                           (get-new-first-notes-list last-chord
-                                (remove-matched-objects
-                                (remove-last-chord last-chord destinations))))))
-
-    destinations = getDestinations name measureName meter
-    lastChord    = getLastChord name measureName
+    destinations = getDestinations db name measureName meter
+    lastChord    = getLastChord db name measureName
 
 -- | Get measures name that have the same analysis label as the destination.
 getDestinations :: Database -> Name -> Name -> Meter -> [Name]
 getDestinations db name measureName meter =
-    fromJust $ Map.lookup (functionList lexicon) meter
+    fromJust $ Map.lookup meter (functionList lexicon)
     where
     analysis = snd $ destination $ evalMeasure db measureName
     lexicon  = evalLexicon db name analysis
@@ -64,6 +69,14 @@ getDestinations db name measureName meter =
                        new-test))))))
     -}
 
+
+makeBestChoice       = undefined
+getDestinationNote   = undefined
+getNewFirstNotesList = undefined
+getPredominant       = undefined
+removeMatchedObjects = undefined
+removeLastChord      = undefined
+getLastChord         = undefined
 spliceChannels       = undefined
 
 -- | Return analysis and music, but with music from other
