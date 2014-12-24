@@ -3,6 +3,7 @@
 ------------------------------------------------------------------------------}
 module SARA.Compose where
 
+import           Data.List         ((\\))
 import qualified Data.Map   as Map
 import           Data.Maybe
 
@@ -90,7 +91,12 @@ findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
 getNewFirstNotesList = undefined
 getPredominant       = undefined
 removeMatchedObjects = undefined
-removeLastChord      = undefined
+
+-- | Remove an element from the list, but only if it is not the only element.
+removeLastChord :: Eq a => a -> [a] -> [a]
+removeLastChord _ [x] = [x]
+removeLastChord x xs  = xs \\ [x]
+
 getLastChord         = undefined
 spliceChannels       = undefined
 
