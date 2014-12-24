@@ -15,7 +15,9 @@ import Types
 -- algorithm should recombine existing material.
 recombinance = 80
 
-
+{-----------------------------------------------------------------------------
+    Composition
+------------------------------------------------------------------------------}
 -- | This is the workhorse compose function.
 simpleCompose :: Database -> Name -> Name -> Int -> Meter -> Prob [([AnalysisLabel], Notes)]
 simpleCompose db name measureName number meter
@@ -53,7 +55,6 @@ simpleCompose db name measureName number meter
         list
             | number == 2 = getPredominant destinations -- choose predominant
             | otherwise   = removeMatchedObjects (removeLastChord lastChord destinations)
-            -- warning: removeLastChord has side effects
 
     getDestinationNote = head . fst . destination . evalMeasure db
 

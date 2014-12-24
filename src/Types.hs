@@ -39,7 +39,11 @@ sortByStart = sortBy (comparing start)
 type Metadata = [(String,String)]
 type Score    = (Metadata, Notes)
 
--- Monad for probabilistic computations.
+
+{-----------------------------------------------------------------------------
+    Probabilistic computations
+------------------------------------------------------------------------------}
+-- | Monad for probabilistic computations.
 type Prob = State StdGen
 
 runProb :: Int -> Prob a -> [a]

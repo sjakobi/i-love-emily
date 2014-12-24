@@ -13,7 +13,7 @@ import SARA.Types
 type Map = Map.Map
 
 {-----------------------------------------------------------------------------
-    Reading from the database
+    Creating a database
 ------------------------------------------------------------------------------}
 data Database = Database
     { dbMeasures :: Map Name Measure
