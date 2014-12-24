@@ -59,6 +59,13 @@ simpleCompose db name measureName number meter
 
     destinations = getDestinations db name measureName meter
     lastChord    = getLastChord db name measureName
+    getLastChord _ _ = id
+    -- Note: In the original SARA source code,
+    -- the  get-last-chord  function has the side effect of setting
+    -- a field in the lexicon entry.
+    -- However, it appears that this field is never accessed,
+    -- so we can skip this step.
+
 
 -- | Get the first note of each measure.
 getNewFirstNotesList :: Database -> Name -> [Name] -> [Pitch]
@@ -102,7 +109,6 @@ removeLastChord :: Eq a => a -> [a] -> [a]
 removeLastChord _ [x] = [x]
 removeLastChord x xs  = xs \\ [x]
 
-getLastChord         = undefined
 spliceChannels       = undefined
 
 -- | Return analysis and music, but with music from other
