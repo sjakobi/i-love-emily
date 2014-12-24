@@ -20,8 +20,9 @@ simpleCompose :: Database -> Name -> Name -> Int -> Meter -> Prob [([AnalysisLab
 simpleCompose db name measureName number meter
     | number == 0 = return []
     | otherwise   = do
-        x  <- interchangeChannels db measureName meter
-        xs <- simpleCompose db name newMeasure (next number) meter
+        x   <- interchangeChannels db measureName meter
+        new <- newMeasure
+        xs  <- simpleCompose db name new (next number) meter
         return (x:xs)
 
     where
@@ -41,7 +42,7 @@ simpleCompose db name measureName number meter
         | isMatch (evalMeasure db measureName),
           Just next <- nextMeasure db measureName,
           isMatch (evalMeasure db next) =
-            next
+            return next
 
         -- make a new choice
         | otherwise = makeBestChoice (getDestinationNote measureName)
@@ -70,7 +71,18 @@ getDestinations db name measureName meter =
     -}
 
 
-makeBestChoice       = undefined
+-- | Return a measure name that has the closes starting pitch.
+makeBestChoice :: Pitch -> [Name] -> [Pitch] -> Prob Name
+makeBestChoice pitch xs ys = findClosest pitch $ zip xs ys
+
+findClosest :: Pitch -> [(a,Pitch)] -> Prob a
+findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
+    where
+    distance (_,y) = abs $ x - y
+    dist           = minimum $ map distance ys
+
+
+
 getDestinationNote   = undefined
 getNewFirstNotesList = undefined
 getPredominant       = undefined
