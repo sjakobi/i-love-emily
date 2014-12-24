@@ -37,6 +37,7 @@ simpleCompose db name measureName number meter
 
     next n = n - 1  -- simpleCompose counts down until it reaches 0.
 
+    -- Choose the next measure.
     newMeasure
         -- return the original next measure if we want to match closely
         | isMatch (evalMeasure db measureName),
@@ -53,8 +54,11 @@ simpleCompose db name measureName number meter
             | otherwise   = removeMatchedObjects (removeLastChord lastChord destinations)
             -- warning: removeLastChord has side effects
 
+    getDestinationNote = head . fst . destination . evalMeasure db
+
     destinations = getDestinations db name measureName meter
     lastChord    = getLastChord db name measureName
+
 
 -- | Get measures name that have the same analysis label as the destination.
 getDestinations :: Database -> Name -> Name -> Meter -> [Name]
@@ -83,7 +87,6 @@ findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
 
 
 
-getDestinationNote   = undefined
 getNewFirstNotesList = undefined
 getPredominant       = undefined
 removeMatchedObjects = undefined
