@@ -48,7 +48,7 @@ simpleCompose db name measureName number meter
 
         -- make a new choice
         | otherwise = makeBestChoice (getDestinationNote measureName)
-                        list (getNewFirstNotesList list)
+                        list (getNewFirstNotesList db lastChord list)
         where
         list
             | number == 2 = getPredominant destinations -- choose predominant
@@ -60,6 +60,13 @@ simpleCompose db name measureName number meter
     destinations = getDestinations db name measureName meter
     lastChord    = getLastChord db name measureName
 
+-- | Get the first note of each measure.
+getNewFirstNotesList :: Database -> Name -> [Name] -> [Pitch]
+getNewFirstNotesList db x xs
+    = map (pitch . head . getSoundingChannel 1 . music . evalMeasure db)
+    $ removeLastChord x xs
+
+getSoundingChannel = undefined
 
 -- | Get measures name that have the same analysis label as the destination.
 getDestinations :: Database -> Name -> Name -> Meter -> [Name]
@@ -87,8 +94,6 @@ findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
     dist           = minimum $ map distance ys
 
 
-
-getNewFirstNotesList = undefined
 getPredominant       = undefined
 removeMatchedObjects = undefined
 
