@@ -55,7 +55,7 @@ simpleCompose db name measureName number meter
                         list (getNewFirstNotesList db lastChord list)
         where
         list
-            | number == 2 = getPredominant destinations -- choose predominant
+            | number == 2 = getPredominant db destinations -- choose predominant
             | otherwise   = removeMatchedObjects db (removeLastChord lastChord destinations)
 
     getDestinationNote = head . fst . destination . evalMeasure db
@@ -98,6 +98,14 @@ getDestinations db name measureName meter =
                        new-test))))))
     -}
 
+-- | Return all measures that preview a cadence,
+-- or the whole list if it contains only one measure.
+getPredominant :: Database -> [Name] -> [Name]
+getPredominant db [x] = [x]
+getPredominant db xs  = filter (isPredominant . evalMeasure db) xs
+    where
+    isPredominant = (`elem` ["p2","c1","p1"]) . snd . destination
+
 
 -- | Return a measure name that has the closes starting pitch.
 makeBestChoice :: Pitch -> [Name] -> [Pitch] -> Prob Name
@@ -108,9 +116,6 @@ findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
     where
     distance (_,y) = abs $ x - y
     dist           = minimum $ map distance ys
-
-
-getPredominant       = undefined
 
 -- | Remove an element from the list, but only if it is not the only element.
 removeLastChord :: Eq a => a -> [a] -> [a]
