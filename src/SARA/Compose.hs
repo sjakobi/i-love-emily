@@ -6,6 +6,8 @@ module SARA.Compose where
 import           Data.List         ((\\))
 import qualified Data.Map   as Map
 import           Data.Maybe
+import qualified Data.Set   as Set
+import           Data.Set          (Set)
 
 import SARA.Database
 import SARA.Types
@@ -74,8 +76,6 @@ getNewFirstNotesList db x xs
     = map (pitch . head . getSoundingChannel 1 . music . evalMeasure db)
     $ removeLastChord x xs
 
-getSoundingChannel = undefined
-
 -- | Get measures name that have the same analysis label as the destination.
 getDestinations :: Database -> Name -> Name -> Meter -> [Name]
 getDestinations db name measureName meter =
@@ -131,3 +131,19 @@ interchangeChannels db measureName meter = do
 -- None of the pieces in the database have an "incipient gesture".
 chooseIncipientGesture :: Name -> [([String], [AnalysisLabel])]
 chooseIncipientGesture _ = [(["incipience"], [])]
+
+{-----------------------------------------------------------------------------
+    Note Utilities
+------------------------------------------------------------------------------}
+-- | Of the channels that are used, get all notes in the nth one.
+-- (Counting begins at @1@).
+getSoundingChannel :: Int -> Notes -> Notes
+getSoundingChannel n notes = filter ((== c) . channel) notes
+    where
+    channels = getChannelNumbersFromEvents notes
+    c        = channels !! (n-1)
+
+-- | Collect all channel numbers that occur in the notes
+getChannelNumbersFromEvents :: Notes -> [Int]
+getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel
+
