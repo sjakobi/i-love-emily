@@ -49,6 +49,10 @@ type AnalysisLabel = String
 isMatch :: Measure -> Bool
 isMatch _ = False
 
+getMatch :: Measure -> Maybe Measure
+getMatch _ = Nothing
+
+
 defaultMeasure = Measure
     { creator              = ""
     , matching_line_number = 1

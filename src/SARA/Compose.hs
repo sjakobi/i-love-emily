@@ -56,7 +56,7 @@ simpleCompose db name measureName number meter
         where
         list
             | number == 2 = getPredominant destinations -- choose predominant
-            | otherwise   = removeMatchedObjects (removeLastChord lastChord destinations)
+            | otherwise   = removeMatchedObjects db (removeLastChord lastChord destinations)
 
     getDestinationNote = head . fst . destination . evalMeasure db
 
@@ -69,6 +69,14 @@ simpleCompose db name measureName number meter
     -- However, it appears that this field is never accessed,
     -- so we can skip this step.
 
+-- | Remove all measure names that have been matched
+-- by the matching component (which we don't use here).
+removeMatchedObjects :: Database -> [Name] -> [Name]
+removeMatchedObjects db = filter (not . isMatched . evalMeasure db)
+    where
+    isMatched measure = case getMatch measure of
+        Just measure' -> matching_line_number measure' > 1
+        Nothing       -> False
 
 -- | Get the first note of each measure.
 getNewFirstNotesList :: Database -> Name -> [Name] -> [Pitch]
@@ -103,7 +111,6 @@ findClosest x ys = choose $ map fst $ filter ((dist ==) . distance) ys
 
 
 getPredominant       = undefined
-removeMatchedObjects = undefined
 
 -- | Remove an element from the list, but only if it is not the only element.
 removeLastChord :: Eq a => a -> [a] -> [a]
