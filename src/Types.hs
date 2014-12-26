@@ -54,6 +54,7 @@ runProb1 seed m = fst $ runState m (mkStdGen seed)
 
 -- | Choose a value uniformly from a list.
 choose :: [a] -> Prob a
+choose [] = error "choose: List must be nonempty."
 choose xs = do
     k <- state $ \s -> randomR (0,length xs-1) s
     return (xs !! k)

@@ -25,11 +25,12 @@ simpleCompose :: Database -> Name -> Name -> Int -> Meter -> Prob [([AnalysisLab
 simpleCompose db name measureName number meter
     | number == 0 = return []
     | otherwise   = do
-        x   <- interchangeChannels db measureName meter
-        new <- newMeasure
-        xs  <- simpleCompose db name new (next number) meter
+        x    <- interchangeChannels db measureName meter
+        mnew <- newMeasure
+        xs   <- case mnew of
+            Just new -> simpleCompose db name new (next number) meter
+            Nothing  -> return []
         return (x:xs)
-
     where
     -- *cadence-match*
     cadenceMatch =
@@ -48,10 +49,12 @@ simpleCompose db name measureName number meter
         | isMatch (evalMeasure db measureName),
           Just next <- nextMeasure db measureName,
           isMatch (evalMeasure db next) =
-            return next
+            return $ Just next
 
+        -- end prematurely if we cannot find a new measure to continue
+        | null list = return Nothing
         -- make a new choice
-        | otherwise = makeBestChoice (getDestinationNote measureName)
+        | otherwise = fmap Just $ makeBestChoice (getDestinationNote measureName)
                         list (getNewFirstNotesList db lastChord list)
         where
         list

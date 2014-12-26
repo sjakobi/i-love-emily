@@ -10,6 +10,10 @@ import SARA.Types
 
 import Types
 
+{-
+runProb1 134 $ simpleCompose chopin_maz_one "chopin-maz-one" "chopin-maz-one-7/4/1-mea-1" 5 3
+-}
+
 {-----------------------------------------------------------------------------
     Build the full example database
 ------------------------------------------------------------------------------}
