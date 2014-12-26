@@ -122,17 +122,42 @@ removeLastChord :: Eq a => a -> [a] -> [a]
 removeLastChord _ [x] = [x]
 removeLastChord x xs  = xs \\ [x]
 
-spliceChannels       = undefined
+-- | Interweave channels from measures with the same analysis label
+spliceChannels :: Database -> Name -> Meter -> Prob Notes
+spliceChannels db name meter
+    | null candidates = return music1
+    | otherwise       = do
+        music2 <- choose candidates
+        return $
+            getSoundingChannel 1 music2
+            ++ (music1 \\ getSoundingChannel 1 music1)
+    where
+    measure  = evalMeasure db name
+    music1   = music measure
+    label    = head $ analysis measure
+    measureNames
+        = maybe [] id
+        $ Map.lookup meter
+        $ functionList
+        $ evalLexicon db (getSection name) label
+
+    candidates = getMatchingAnalysisMusic db (analysis measure) measureNames
+
+-- | Get music of all those measures whose (complete) analysis matches.
+getMatchingAnalysisMusic :: Database -> [AnalysisLabel] -> [Name] -> [Notes]
+getMatchingAnalysisMusic db as =
+    map music . filter ((as ==) . analysis) . map (evalMeasure db)
+
 
 -- | Return analysis and music, but with music from other
 -- appropriate measures interleaved.
 interchangeChannels :: Database -> Name -> Meter -> Prob ([AnalysisLabel],Notes)
 interchangeChannels db measureName meter = do
-    k <- makeRandom 100
-    return (analysis measure,
-        if recombinance > 60 && k < recombinance
+    k     <- makeRandom 100
+    notes <- if recombinance > 60 && k < recombinance
         then spliceChannels db measureName meter
-        else music measure)
+        else return $ music measure
+    return (analysis measure, notes)
     where
     measure = evalMeasure db measureName
 
@@ -158,4 +183,3 @@ getSoundingChannel n notes = filter ((== c) . channel) notes
 -- | Collect all channel numbers that occur in the notes
 getChannelNumbersFromEvents :: Notes -> [Int]
 getChannelNumbersFromEvents = Set.toList . Set.fromList . map channel
-
