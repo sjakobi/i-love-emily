@@ -20,19 +20,60 @@ recombinance = 80
 {-----------------------------------------------------------------------------
     Composition
 ------------------------------------------------------------------------------}
+type Form = (String, Int)
+
+dorepeat = False
+
+-- | Compose a piece with both incipience and cadence.
+compose :: Database -> Name -> Int -> Meter -> Form -> Prob [([AnalysisLabel], Notes)]
+compose db creator numberOfMeasures meter form
+    | recombinance < 10             = finiteStateTransition db meter
+    | otherwise                     = do
+        chooseIncipientGesture creator -- essentially a no-op
+        start   <- chooseInitialChord creator meter
+        (piece0, cadenceMatch)
+                <- simpleCompose db creator start numberOfMeasures meter
+        let piece = (if dorepeat then makeRepeat else id) piece0
+
+        cadence <- case cadenceMatch of
+            Just name    -> return $ music $ evalCadence db name
+            Nothing      -> do
+                k <- makeRandom 100
+                if recombinance > 60 && k < recombinance
+                    then spliceCadenceChannels
+                            (chooseACadence db creator form)
+                            (listAppropriateCadences $ snd form)
+                    else do
+                        name <- chooseACadence db creator form
+                        return $ music $ evalCadence db name
+        return $
+            piece0 ++ [(["cadence"], cadence)]
+
+spliceCadenceChannels = undefined
+chooseACadence db creator form = undefined
+listAppropriateCadences = undefined
+makeRepeat              = undefined
+chooseInitialChord      = undefined
+finiteStateTransition   = undefined -- composition with a finite state machine
+
 -- | This is the workhorse compose function.
-simpleCompose :: Database -> Name -> Name -> Int -> Meter -> Prob [([AnalysisLabel], Notes)]
-simpleCompose db name measureName number meter
-    | number == 0 = return []
+simpleCompose
+    :: Database -> Name -> Name -> Int -> Meter
+    -> Prob ([([AnalysisLabel], Notes)] -- music with analysis labels
+            , Maybe Name)               -- possible matching cadence
+simpleCompose db creator measureName number meter
+    | number == 0 = return ([], Nothing)
     | otherwise   = do
-        x    <- interchangeChannels db measureName meter
-        mnew <- newMeasure
-        xs   <- case mnew of
-            Just new -> simpleCompose db name new (next number) meter
-            Nothing  -> return []
-        return (x:xs)
+        x      <- interchangeChannels db measureName meter
+        mnew   <- newMeasure
+        (xs,c) <- case mnew of
+            Just new -> simpleCompose db creator new (next number) meter
+            Nothing  -> return ([], Nothing)
+
+        if number == 1
+            then return (x:xs, cadenceMatch)
+            else return (x:xs, c)
     where
-    -- *cadence-match*
     cadenceMatch =
         if  isMatch (evalMeasure db measureName)
             && number == 1
@@ -63,8 +104,8 @@ simpleCompose db name measureName number meter
 
     getDestinationNote = head . fst . destination . evalMeasure db
 
-    destinations = getDestinations db name measureName meter
-    lastChord    = getLastChord db name measureName
+    destinations = getDestinations db creator measureName meter
+    lastChord    = getLastChord db creator measureName
     getLastChord _ _ = id
     -- Note: In the original SARA source code,
     -- the  get-last-chord  function has the side effect of setting
@@ -169,8 +210,8 @@ interchangeChannels db measureName meter = do
 --
 -- This function seems to be defunct.
 -- None of the pieces in the database have an "incipient gesture".
-chooseIncipientGesture :: Name -> [([String], [AnalysisLabel])]
-chooseIncipientGesture _ = [(["incipience"], [])]
+chooseIncipientGesture :: Name -> Prob [([String], [AnalysisLabel])]
+chooseIncipientGesture _ = return [(["incipience"], [])]
 
 {-----------------------------------------------------------------------------
     Note Utilities
