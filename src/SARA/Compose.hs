@@ -49,9 +49,6 @@ compose db creator numberOfMeasures meter form
         return $
             piece0 ++ [(["cadence"], cadence)]
 
-spliceCadenceChannels = undefined
-chooseACadence db creator form = undefined
-listAppropriateCadences = undefined
 makeRepeat              = undefined
 chooseInitialChord      = undefined
 finiteStateTransition   = undefined -- composition with a finite state machine
@@ -206,12 +203,35 @@ interchangeChannels db measureName meter = do
     measure = evalMeasure db measureName
 
 
+{-----------------------------------------------------------------------------
+    Incipient gestures
+------------------------------------------------------------------------------}
 -- | Randomly choose a pickup.
 --
 -- This function seems to be defunct.
 -- None of the pieces in the database have an "incipient gesture".
 chooseIncipientGesture :: Name -> Prob [([String], [AnalysisLabel])]
 chooseIncipientGesture _ = return [(["incipience"], [])]
+
+{-----------------------------------------------------------------------------
+    Cadences
+------------------------------------------------------------------------------}
+spliceCadenceChannels = undefined
+listAppropriateCadences = undefined
+
+-- | Return a best cadence for the composition.
+chooseACadence :: Database -> Name -> Form -> Prob Name
+chooseACadence db creator (_,cadenceType) = chooseTheBestCadence $
+    if cadenceType == 2 then ifnotnull full half else ifnotnull half full
+    where
+    full = fullCadenceList $ evalCadenceLexicon db creator
+    half = halfCadenceList $ evalCadenceLexicon db creator
+    ifnotnull xs ys = if null xs then ys else xs
+
+chooseTheBestCadence = undefined
+evalCadenceLexicon = undefined
+fullCadenceList = undefined
+halfCadenceList = undefined
 
 {-----------------------------------------------------------------------------
     Note Utilities
