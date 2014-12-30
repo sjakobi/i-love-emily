@@ -26,6 +26,7 @@ type Form = (String, Int)
 type Composition = [([AnalysisLabel], Notes)]
 
 dorepeat = False
+phraseLength = 4 -- dummy
 
 -- | Compose a piece with both incipience and cadence.
 compose :: Database -> Name -> Int -> Meter -> Form -> Prob Composition
@@ -36,7 +37,7 @@ compose db creator numberOfMeasures meter form
         start   <- chooseInitialChord creator meter
         (piece0, cadenceMatch)
                 <- simpleCompose db creator start numberOfMeasures meter
-        let piece = (if dorepeat then makeRepeat else id) piece0
+        let piece = (if dorepeat then makeRepeat phraseLength else id) piece0
 
         cadence <- case cadenceMatch of
             Just name    -> return $ music $ evalCadence db name
@@ -52,7 +53,13 @@ compose db creator numberOfMeasures meter form
         return $
             piece0 ++ [(["cadence"], cadence)]
 
-makeRepeat              = undefined
+-- | Repeat the first half of the argument.
+makeRepeat :: Int -> Composition -> Composition
+makeRepeat phraseLength musicBeforeCadence = music ++ take (length music - 2) music
+    where
+    music = firstAmount ((phraseLength `div` 2) + 1) musicBeforeCadence
+    firstAmount n = take n . filter (not . null . snd)
+
 chooseInitialChord      = undefined
 finiteStateTransition   = undefined -- composition with a finite state machine
 
