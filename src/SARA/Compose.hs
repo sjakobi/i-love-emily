@@ -22,10 +22,13 @@ recombinance = 80
 ------------------------------------------------------------------------------}
 type Form = (String, Int)
 
+-- | Music with analysis labels.
+type Composition = [([AnalysisLabel], Notes)]
+
 dorepeat = False
 
 -- | Compose a piece with both incipience and cadence.
-compose :: Database -> Name -> Int -> Meter -> Form -> Prob [([AnalysisLabel], Notes)]
+compose :: Database -> Name -> Int -> Meter -> Form -> Prob Composition
 compose db creator numberOfMeasures meter form
     | recombinance < 10             = finiteStateTransition db meter
     | otherwise                     = do
@@ -56,8 +59,8 @@ finiteStateTransition   = undefined -- composition with a finite state machine
 -- | This is the workhorse compose function.
 simpleCompose
     :: Database -> Name -> Name -> Int -> Meter
-    -> Prob ([([AnalysisLabel], Notes)] -- music with analysis labels
-            , Maybe Name)               -- possible matching cadence
+    -> Prob (Composition   -- music with analysis labels
+            , Maybe Name)  -- possible matching cadence
 simpleCompose db creator measureName number meter
     | number == 0 = return ([], Nothing)
     | otherwise   = do
