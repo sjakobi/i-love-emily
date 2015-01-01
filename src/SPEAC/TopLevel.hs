@@ -27,11 +27,14 @@ runTheProgram events meter =
     speacPhraseLists = doSpeacOnPhrases phrasedEvents meter
     -- these are the beginnings of each phrase
     phrasedEvents = breakIntoPhrases events (tail $ map snd form)
-    -- form, phraseBeginnings and phraseLabels are just test values,
+    
+	-- form, phraseBeginnings and phraseLabels are just test values,
     -- do not correspond to actual definitions in top-level.lisp
-    form = zip phraseLabels phraseBeginnings
-    phraseBeginnings = map (start . unmark . head) $ breakAtEachEntrance events
-    phraseLabels = cycle "ab"
+    -- form = zip phraseLabels phraseBeginnings
+    --
+	-- phraseBeginnings = map (start . unmark . head) $ breakAtEachEntrance events
+    form = [('a',0),('a',24000),('b',56000),('b',67000),('a',96000),('a',120000)]
+    -- phraseLabels = cycle "ab"
 
 -- | Groups the notes into time intervals according to the given timings
 breakIntoPhrases :: Notes -> [Time] -> [Notes]

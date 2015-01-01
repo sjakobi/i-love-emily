@@ -61,21 +61,38 @@ developSpeac weights average' largest smallest =
       where
         (assignment, previousAssignment')
           | withinPointTwo w previousWeight
-          = (Extension, Extension)
+          	= (Extension, Extension)
           | withinPointTwo w (listToMaybe ws) 
-          = assignments Preparation Extension False
+          	= assignments Preparation False
           | withinPointTwo w (Just average')
-          = assignments Statement Extension True
+          	= assignments Statement True
           | withinPointTwo w (Just largest)
-          = assignments Antecedent Extension False
+          	= assignments Antecedent False
           | (Just Antecedent) <- previousAssignment
           , withinPointTwo w (Just smallest)
-          = (Consequent, Consequent)
+          	= (Consequent, Consequent)
           | otherwise
-          = assignments Statement Extension True
-        assignments a b aIsPrev = (ass, prev)
-          where ass = if previousAssignment == (Just a) then b else a
+          	= assignments Statement True
+        assignments a aIsPrev = (ass, prev)
+          where ass  = if previousAssignment == (Just a) then Extension else a
                 prev = if aIsPrev then a else ass
+
+developSpeac =
+	fixStatements . scanl Extension walk . groupBy (within 0.2)
+	where
+	fixStatements =
+		map thefix
+		. groupBy (\x y -> x == Statement && y == Statement)
+		where
+		thefix (Statements:xs) = Statement : replicate (length xs) Extension
+		thefix xs              = xs
+	
+	walk prev weight
+		| within 0.2 weight average = Statement
+		| within 0.2 weight largest = Antecedent
+		| within 0.2 weight smallest =
+			if prev == Antecedent then Consequent else Statement
+
 
 withinPointTwo :: Tension -> Maybe Tension -> Bool
 withinPointTwo _     Nothing       = False
