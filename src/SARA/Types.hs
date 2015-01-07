@@ -75,3 +75,9 @@ data Lexicon = Lexicon
     , lastChord     :: ()
     } deriving (Show)
 
+-- | The 'CadenceLexicon' type collects information about cadences.
+data CadenceLexicon = CadenceLexicon
+    { halfCadenceList :: [Name]
+    , fullCadenceList :: [Name]
+    } deriving (Eq, Ord, Show)
+

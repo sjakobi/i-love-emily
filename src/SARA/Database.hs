@@ -16,8 +16,9 @@ type Map = Map.Map
     Creating a database
 ------------------------------------------------------------------------------}
 data Database = Database
-    { dbMeasures :: Map Name Measure
-    , dbLexicons :: Map (Name,AnalysisLabel) Lexicon
+    { dbMeasures        :: Map Name Measure
+    , dbLexicons        :: Map (Name,AnalysisLabel) Lexicon
+    , dbCadenceLexicons :: Map Name CadenceLexicon
     } deriving (Show)
 
 -- | Build a database from a list of pieces.
@@ -34,8 +35,14 @@ makeDatabase pieces = Database
         , let key     = (getSection measureName, head (analysis measure))
         , let lexicon = singletonLexicon (measureName, measure)
         ]
-    }
 
+    , dbCadenceLexicons = Map.map buildCadenceLexicon $ Map.fromList $
+        [ (key, lexicon)
+        | piece <- pieces
+        , let key     = getSection $ pName piece
+        , let lexicon = pCadences  $ piece
+        ]
+    }
 
 singletonLexicon :: (Name, Measure) -> Lexicon
 singletonLexicon (name, measure) = Lexicon
@@ -54,14 +61,26 @@ unionLexicon a b = Lexicon
 
 data Piece = Piece
     { pMeasures :: [(Name, Measure)]
+    , pCadences :: [(CadenceType, Name)]
     , pName     :: Name
     } deriving (Show)
 
+data CadenceType = Full | Half
+    deriving (Eq, Ord, Show)
+
+buildCadenceLexicon :: [(CadenceType, Name)] -> CadenceLexicon
+buildCadenceLexicon = foldl' f empty
+    where
+    f lexicon (Full,x) = lexicon { fullCadenceList = x : fullCadenceList lexicon }
+    f lexicon (Half,x) = lexicon { halfCadenceList = x : halfCadenceList lexicon }
+    empty = CadenceLexicon [] []
+
 -- | Prepare a piece for inclusion in the database.
-makePiece name cadence measures = Piece
+makePiece name (cadenceType, cadence) measures = Piece
     { pMeasures = (name ++ "-cadence", cadence)
                  : zip (map (makeMeasureName name) [1..]) measures
     , pName     = name
+    , pCadences = [(cadenceType, name ++ "-cadence")]
     }
 
 -- | Create names for measures of a piece.
@@ -89,6 +108,13 @@ evalCadence db name =
 evalLexicon :: Database -> Name -> AnalysisLabel -> Lexicon
 evalLexicon db name label =
     fromJust $ Map.lookup (name, label) $ dbLexicons db
+
+-- | Replacement for  (eval (concat ... '-cadence-lexicon))
+--
+-- Returns a list of measures (that are cadences).
+evalCadenceLexicon :: Database -> Name -> CadenceLexicon
+evalCadenceLexicon db name =
+    fromJust $ Map.lookup name $ dbCadenceLexicons db
 
 
 -- | Given a measure, find the next measure of the original piece

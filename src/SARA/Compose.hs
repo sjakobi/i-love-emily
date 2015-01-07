@@ -239,9 +239,6 @@ chooseACadence db creator (_,cadenceType) = chooseTheBestCadence $
     ifnotnull xs ys = if null xs then ys else xs
 
 chooseTheBestCadence = undefined
-evalCadenceLexicon = undefined
-fullCadenceList = undefined
-halfCadenceList = undefined
 
 {-----------------------------------------------------------------------------
     Note Utilities

@@ -41,7 +41,7 @@ parseMusic :: String -> Notes
 parseMusic = readNotes
 
 chopin_7_4_1 :: Piece
-chopin_7_4_1 = makePiece name cadence $ map measure [1..count]
+chopin_7_4_1 = makePiece name (Full, cadence) $ map measure [1..count]
     where
     name  = "chopin-maz-one-7/4/1"
     count = 6 :: Int -- number of measures
